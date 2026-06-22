@@ -40,6 +40,8 @@ SAPT_INGEST_SCRIPT_URL=https://ingest.sapt.ai/v1/track.js
 
 After deploy, open the site and click **Run setup** in the bottom-right setup banner. That creates or updates the `funnel_lead` CRM object type in Sapt.
 
+If Cloudflare shows `HTTP 400` under **Project name**, use the existing-repo import path instead of the deploy-button repo creation flow. See `docs/cloudflare-http-400.md`.
+
 ## Local Development
 
 ```bash
