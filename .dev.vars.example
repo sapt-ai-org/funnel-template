@@ -1,0 +1,6 @@
+SAPT_API_KEY=sapt_your_api_key_here
+SAPT_PROJECT_ID=00000000-0000-0000-0000-000000000000
+
+# Optional overrides. Defaults are already set in wrangler.jsonc.
+# SAPT_ENDPOINT=https://api.sapt.ai
+# SAPT_INGEST_SCRIPT_URL=https://ingest.sapt.ai/v1/track.js

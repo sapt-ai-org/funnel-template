@@ -1,0 +1,43 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+.wrangler/
+
+# Local secrets and environment files
+.dev.vars
+.env
+.env.*
+!.env.example
+!.env.*.example
+
+# Package-manager noise
+package-lock.json
+yarn.lock
+bun.lockb
+
+# Logs
+*.log
+npm-debug.log*
+pnpm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# OS and editor files
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+
+# Test and coverage artifacts
+coverage/
+.nyc_output/
+worker-startup.cpuprofile
+
+# Temporary files
+tmp/
+temp/
+*.tmp
