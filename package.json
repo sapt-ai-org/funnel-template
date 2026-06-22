@@ -29,16 +29,6 @@
     "production:test": "pnpm check && pnpm deploy:dry-run",
     "smoke:test": "node scripts/production-smoke.mjs"
   },
-  "cloudflare": {
-    "bindings": {
-      "SAPT_API_KEY": {
-        "description": "Sapt API key. Create one in app.sapt.ai -> Account -> API Keys. Must have write access to SAPT_PROJECT_ID."
-      },
-      "SAPT_PROJECT_ID": {
-        "description": "Sapt project ID where funnel leads, memory, and analytics should be stored."
-      }
-    }
-  },
   "dependencies": {
     "@vitejs/plugin-react": "^4.3.4",
     "hono": "^4.6.14",

@@ -1,43 +1,96 @@
 # Human Guide: Deploy
 
-## Fast Path
+## No-Code Path
 
-1. Click the Cloudflare deploy button in `README.md`.
-2. Paste `SAPT_API_KEY`.
-3. Paste `SAPT_PROJECT_ID`.
-4. Deploy.
-5. Open the site.
-6. Click **Run setup**.
-7. Submit a test lead.
-8. Confirm the lead appears in Sapt CRM.
+If you do not know how to code, give this repo link to Claude Code, Cursor, ChatGPT, or another coding agent:
 
-## Local Path
-
-```bash
-pnpm install
-cp .dev.vars.example .dev.vars
-pnpm build
-pnpm dev
+```txt
+https://github.com/sapt-ai-org/funnel-template
 ```
 
-## Production Test Before Deploy
+Then paste this prompt:
+
+```txt
+Please help me deploy this Sapt funnel template to Cloudflare Workers.
+
+I need you to walk me through each step in plain English.
+
+I have or will create:
+- A Sapt account
+- A Sapt project ID
+- A Sapt API key
+- A Cloudflare account
+
+Please help me:
+1. Clone the repo.
+2. Install pnpm dependencies.
+3. Create .dev.vars.
+4. Run local tests.
+5. Run a real local smoke test.
+6. Deploy to Cloudflare Workers.
+7. Set Cloudflare Worker secrets.
+8. Confirm leads are created in Sapt CRM.
+9. Customize the funnel for my business.
+```
+
+## Developer Path
+
+Clone and install:
+
+```bash
+git clone https://github.com/sapt-ai-org/funnel-template.git
+cd funnel-template
+pnpm install
+```
+
+Create local env:
+
+```bash
+cp .dev.vars.example .dev.vars
+```
+
+Fill `.dev.vars`:
+
+```txt
+SAPT_API_KEY=sapt_...
+SAPT_PROJECT_ID=your-project-id
+```
+
+Run production validation:
 
 ```bash
 pnpm production:test
 ```
 
-This runs the complete local verification suite and `wrangler deploy --dry-run`.
+Run locally:
 
-For an end-to-end Sapt test before deploying:
+```bash
+pnpm build
+pnpm dev
+```
 
-1. Put real Sapt credentials in `.dev.vars`.
-2. Run `pnpm build`.
-3. Run `pnpm dev`.
-4. Open the Wrangler local URL.
-5. Click **Run setup**.
-6. Submit a test lead.
-7. Check Sapt CRM for a `funnel_lead` record.
-8. Check Sapt memory for `funnels/leads/{recordId}`.
+Run the local smoke test in another terminal:
+
+```bash
+FUNNEL_TEST_BASE_URL=http://localhost:8787 pnpm smoke:test
+```
+
+Deploy:
+
+```bash
+wrangler login
+wrangler secret put SAPT_API_KEY
+wrangler secret put SAPT_PROJECT_ID
+pnpm deploy
+```
+
+After deploy:
+
+1. Open the deployed URL.
+2. Click **Run setup**.
+3. Submit a test lead.
+4. Confirm the lead appears in Sapt CRM.
+5. Confirm the memory entry exists under `funnels/leads/{recordId}`.
 
 ## Cloudflare Bindings
 
@@ -56,3 +109,4 @@ Defaults already in `wrangler.jsonc`:
 - If `/api/health` fails, check the API key.
 - If `/api/setup` fails with 403, the key cannot create/update CRM object types in the project.
 - If leads submit but analytics are missing, check `SAPT_PROJECT_ID` and script loading in browser devtools.
+- If Cloudflare's GitHub UI gets in your way, skip it and deploy with `wrangler` from your terminal.

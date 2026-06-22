@@ -2,8 +2,6 @@
 
 Cloudflare-first funnel template that works with only a Sapt project ID and API key.
 
-[![Deploy to Cloudflare](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/sapt-ai-org/funnel-template)
-
 ## Human Summary
 
 This repo gives you a working funnel that:
@@ -24,14 +22,91 @@ This repo gives you a working funnel that:
 
 ## Deploy
 
-Click the Cloudflare deploy button, then enter these bindings:
+There is intentionally no deploy button. Cloudflare's repo-creation UI can be brittle, and this template is meant to be easy to launch either with an AI coding assistant or with normal developer tools.
+
+### If You Do Not Know How To Code
+
+Give this GitHub repo link to Claude Code, Cursor, ChatGPT, or another coding agent:
+
+```txt
+https://github.com/sapt-ai-org/funnel-template
+```
+
+Then paste this prompt:
+
+```txt
+Please help me deploy and customize this Sapt funnel template.
+
+I do not want to change the Sapt integration unless needed.
+Walk me through:
+1. Cloning the repo.
+2. Installing pnpm dependencies.
+3. Creating a Sapt API key and finding my Sapt project ID.
+4. Filling .dev.vars for local testing.
+5. Running pnpm production:test.
+6. Running the local smoke test.
+7. Deploying to Cloudflare Workers.
+8. Adding the required Cloudflare Worker secrets.
+9. Customizing the copy, form fields, CRM fields, and design for my business.
+
+Business context:
+[PASTE WHAT THE FUNNEL SHOULD SELL, WHO IT IS FOR, THE STYLE YOU WANT, AND WHAT FIELDS YOU WANT TO COLLECT]
+```
+
+The agent can read `docs/deploy.md`, `docs/customize.md`, `docs/production-test.md`, and `docs/ai-editing-guide.md` and walk you through the exact commands.
+
+### If You Do Know How To Code
+
+Clone the repo:
+
+```bash
+git clone https://github.com/sapt-ai-org/funnel-template.git
+cd funnel-template
+pnpm install
+```
+
+Create local env:
+
+```bash
+cp .dev.vars.example .dev.vars
+```
+
+Fill in:
 
 ```txt
 SAPT_API_KEY=sapt_...
 SAPT_PROJECT_ID=your-project-id
 ```
 
-Cloudflare uses the defaults in `wrangler.jsonc`:
+Run the local production check:
+
+```bash
+pnpm production:test
+```
+
+Run locally:
+
+```bash
+pnpm build
+pnpm dev
+```
+
+In another terminal, run an end-to-end smoke test against your local Worker:
+
+```bash
+FUNNEL_TEST_BASE_URL=http://localhost:8787 pnpm smoke:test
+```
+
+Deploy to Cloudflare:
+
+```bash
+wrangler login
+wrangler secret put SAPT_API_KEY
+wrangler secret put SAPT_PROJECT_ID
+pnpm deploy
+```
+
+Cloudflare uses these defaults in `wrangler.jsonc`:
 
 ```txt
 SAPT_ENDPOINT=https://api.sapt.ai
@@ -39,8 +114,6 @@ SAPT_INGEST_SCRIPT_URL=https://ingest.sapt.ai/v1/track.js
 ```
 
 After deploy, open the site and click **Run setup** in the bottom-right setup banner. That creates or updates the `funnel_lead` CRM object type in Sapt.
-
-If Cloudflare shows `HTTP 400` under **Project name**, use the existing-repo import path instead of the deploy-button repo creation flow. See `docs/cloudflare-http-400.md`.
 
 ## Local Development
 
