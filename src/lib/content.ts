@@ -1,8 +1,7 @@
 /**
- * Section-content resolver. Hardcoded `site-config` blocks are the default and
- * always render with no credentials. When `useCmsContent` is on AND a key is
- * configured AND a matching CMS item exists, its `content` is merged OVER the
- * fallback (CMS keys win; missing keys keep the hardcoded value).
+ * Optional section-content resolver. Code remains the default source of truth.
+ * When `useCmsContent` is enabled and a matching published item exists, CMS
+ * keys layer over the caller-provided fallback.
  */
 import { siteConfig } from '@/config/site-config'
 import { cmsGetBySlug } from './sapt-server'

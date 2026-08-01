@@ -1,20 +1,17 @@
 import { Analytics } from '@/components/Analytics'
 import { ScrollToTop } from '@/components/ui'
-import { siteConfig } from '@/config/site-config'
+import { landingSpec } from '@/config/funnel'
+import { safeFontStylesheetUrl, themeStyle } from '@/lib/theme'
 import type { Metadata, Viewport } from 'next'
 import './globals.css'
 
-const title = `${siteConfig.companyName} | ${siteConfig.tagline}`
-const description = 'Professional services tailored to your needs. Book your consultation today.'
-
 export const metadata: Metadata = {
-  title,
-  description,
-  keywords: ['services', 'professional', 'consultation'],
-  authors: [{ name: siteConfig.companyName }],
+  title: landingSpec.seo.title,
+  description: landingSpec.seo.description,
+  authors: [{ name: landingSpec.brandName }],
   openGraph: {
-    title,
-    description,
+    title: landingSpec.seo.title,
+    description: landingSpec.seo.description,
     type: 'website',
     locale: 'en_US',
   },
@@ -24,7 +21,7 @@ export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
   viewportFit: 'cover',
-  themeColor: '#3B82F6',
+  themeColor: landingSpec.theme.primary,
 }
 
 export default function RootLayout({
@@ -32,8 +29,17 @@ export default function RootLayout({
 }: {
   children: React.ReactNode
 }) {
+  const fontStylesheetUrl = safeFontStylesheetUrl(landingSpec.theme.fontStylesheetUrl)
+
   return (
-    <html lang="en" data-theme={siteConfig.theme}>
+    <html lang="en" style={themeStyle(landingSpec.theme)}>
+      {fontStylesheetUrl && (
+        <head>
+          <link rel="preconnect" href="https://fonts.googleapis.com" />
+          <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+          <link rel="stylesheet" href={fontStylesheetUrl} />
+        </head>
+      )}
       <body>
         <ScrollToTop />
         {children}

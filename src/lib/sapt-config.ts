@@ -11,7 +11,6 @@
  * - NEXT_PUBLIC_SAPT_PROJECT_ID    (required) your Sapt project UUID
  * - NEXT_PUBLIC_SAPT_BASE_URL      (optional) API base, default https://api.sapt.ai
  * - NEXT_PUBLIC_SAPT_INGEST_URL    (optional) analytics ingest, default https://ingest.sapt.ai
- * - SAPT_API_KEY                   (optional, SERVER ONLY) enables CMS reads. Never expose.
  * - SAPT_BOOKING_TYPE_SLUG         (optional, SERVER) CRM typed-record slug, default "booking"
  */
 
@@ -40,11 +39,10 @@ export function isSaptConfigured(): boolean {
   return Boolean(process.env.NEXT_PUBLIC_SAPT_PROJECT_ID)
 }
 
-/** Server-only extras (API key, type slugs). Do not import from client code. */
+/** Server-only extras (type slugs). Do not import from client code. */
 export function getSaptServerConfig() {
   return {
     ...getSaptPublicConfig(),
-    apiKey: process.env.SAPT_API_KEY || undefined,
     bookingTypeSlug: process.env.SAPT_BOOKING_TYPE_SLUG || DEFAULT_BOOKING_TYPE_SLUG,
   }
 }

@@ -40,8 +40,14 @@ export interface ContactStep {
   id: string
   question: string
   help?: string
-  fields: Array<'name' | 'email' | 'phone'>
+  fields: ContactField[]
   submitLabel: string
+}
+
+export interface ContactField {
+  id: 'name' | 'email' | 'phone'
+  label: string
+  placeholder: string
 }
 
 export type FunnelStep = ChoiceStep | ContactStep
@@ -56,6 +62,14 @@ export interface FunnelFlow {
   /** Fine print on the contact step (18+ / results-vary). */
   legal?: string
   success: { title: string; body: string; phone?: string; phoneHref?: string }
+  ui: {
+    backLabel: string
+    closeLabel: string
+    continueLabel: string
+    submittingLabel: string
+    genericError: string
+    backToSiteLabel: string
+  }
 }
 
 /* ── Landing page types (the scrollable `/` page) ──────────────────────────── */
@@ -65,6 +79,7 @@ export interface Testimonial { author: string; role: string; quote: string; rati
 export interface Faq { q: string; a: string }
 
 export interface LandingSpec {
+  template: 'aurora' | 'mono'
   brandName: string
   /**
    * Client logo, stamped in at provisioning time from the project's branding.
@@ -74,6 +89,21 @@ export interface LandingSpec {
   logo: { src: string; alt: string } | null
   /** Primary CTA label reused across the page — say exactly what happens. */
   ctaLabel: string
+  seo: { title: string; description: string }
+  theme: {
+    primary: string
+    accent: string
+    background: string
+    surface: string
+    text: string
+    textMuted: string
+    border: string
+    bodyFontFamily: string
+    displayFontFamily: string
+    fontStylesheetUrl?: string
+  }
+  reviewConnector: string
+  footerSuffix: string
   hero: {
     eyebrow: string
     headline: string
@@ -97,9 +127,28 @@ export interface LandingSpec {
    ════════════════════════════════════════════════════════════════════════════ */
 
 export const landingSpec: LandingSpec = {
+  template: "aurora",
   brandName: "Placeholder Co",
   logo: null,
   ctaLabel: "Book your free consultation",
+  seo: {
+    title: "Placeholder Co — Book a free consultation",
+    description: "Answer a few quick questions and book a free consultation.",
+  },
+  theme: {
+    primary: "#948CC1",
+    accent: "#C890AC",
+    background: "#FAFAFA",
+    surface: "#FFFFFF",
+    text: "#1F2937",
+    textMuted: "#6B7280",
+    border: "#E5E7EB",
+    bodyFontFamily: "Inter, ui-sans-serif, system-ui, sans-serif",
+    displayFontFamily: "Inter, ui-sans-serif, system-ui, sans-serif",
+    fontStylesheetUrl: "https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap",
+  },
+  reviewConnector: "from",
+  footerSuffix: "All rights reserved.",
 
   hero: {
     eyebrow: "City, State",
@@ -203,7 +252,11 @@ export const landingSpec: LandingSpec = {
         id: "contact",
         question: "Where should we send your consultation details?",
         help: "We'll reach out to book a time that works for you.",
-        fields: ["name", "phone", "email"],
+        fields: [
+          { id: "name", label: "Full name", placeholder: "Your name" },
+          { id: "phone", label: "Phone", placeholder: "Phone number" },
+          { id: "email", label: "Email", placeholder: "you@email.com" },
+        ],
         submitLabel: "Book my free consultation",
       },
     ],
@@ -213,6 +266,14 @@ export const landingSpec: LandingSpec = {
       body: "Thanks — our team will reach out shortly to book your free consultation.",
       phone: "(000) 000-0000",
       phoneHref: "tel:+10000000000",
+    },
+    ui: {
+      backLabel: "Back",
+      closeLabel: "Close",
+      continueLabel: "Continue",
+      submittingLabel: "Submitting…",
+      genericError: "We couldn’t submit that. Please try again.",
+      backToSiteLabel: "Back to site",
     },
   },
 }
@@ -248,6 +309,7 @@ export function scanForBannedWords(text: string): string[] {
 export function landingCopy(spec: LandingSpec): string {
   const parts: string[] = [
     spec.brandName, spec.ctaLabel,
+    spec.seo.title, spec.seo.description, spec.reviewConnector, spec.footerSuffix,
     spec.hero.eyebrow, spec.hero.headline, spec.hero.subhead ?? '',
     spec.trustLabel, ...spec.trustLogos,
     spec.benefits.eyebrow, spec.benefits.title,
@@ -259,11 +321,15 @@ export function landingCopy(spec: LandingSpec): string {
     spec.finalCta.eyebrow, spec.finalCta.title, spec.finalCta.subhead ?? '',
     spec.funnel.panelHeadline, spec.funnel.panelSubhead, spec.funnel.legal ?? '',
     spec.funnel.success.title, spec.funnel.success.body,
+    ...Object.values(spec.funnel.ui),
   ]
   for (const step of spec.funnel.steps) {
     parts.push(step.question, step.help ?? '')
     if (step.kind === 'choice') for (const o of step.options) parts.push(o.label, o.sublabel ?? '')
-    else parts.push(step.submitLabel)
+    else parts.push(
+      step.submitLabel,
+      ...step.fields.flatMap((field) => [field.label, field.placeholder])
+    )
   }
   return parts.join(' ')
 }

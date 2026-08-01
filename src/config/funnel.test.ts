@@ -17,7 +17,9 @@ describe('landing + funnel spec', () => {
     const steps = landingSpec.funnel.steps
     const last = steps[steps.length - 1]
     expect(last.kind).toBe('contact')
-    if (last.kind === 'contact') expect(last.fields).toContain('email')
+    if (last.kind === 'contact') {
+      expect(last.fields.map((field) => field.id)).toContain('email')
+    }
   })
 
   it('has a legal/consent line (18+ / results vary) for compliance', () => {

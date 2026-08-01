@@ -2,7 +2,8 @@
 
 This template is a **perspective.co-style lead funnel**: one question per screen, big
 tappable buttons, minimal words. The entire funnel is one file — `src/config/funnel.ts`.
-Branding and copy can also come from Sapt so the same template re-skins per client.
+Sapt stays connected for leads, analytics, and optional published CMS sections, while the
+deployed site's source of truth remains code.
 
 **The whole job, start to finish:**
 
@@ -36,7 +37,7 @@ What you're collecting:
 |---|---|---|
 | Logo (SVG or PNG) | `public/logo.svg` | If the logo is a PNG wrapped in an SVG, extract the PNG. |
 | Favicon | `public/favicon.ico` / `public/icon.png` | |
-| Brand colors | Step 5 (`globals.css`) + Sapt branding | Grab primary + accent + neutrals. |
+| Brand colors | Step 5 (`src/config/funnel.ts`) + Sapt branding | Grab primary + accent + neutrals. |
 | Fonts | Step 5 | Note the display + body families. |
 | Hero image (optional) | `public/` | Only if you use imagery in the funnel. |
 
@@ -105,26 +106,36 @@ wasted space.
 
 ## 4. Configure the funnel
 
-Open **`src/config/funnel.ts`** — this is the only file you edit to change the flow. It's a
-single `funnelSpec` object:
+Open **`src/config/funnel.ts`** — this is the only file you edit to change the live site. It
+contains one `landingSpec` object:
 
 ```ts
-export const funnelSpec: FunnelSpec = {
+export const landingSpec: LandingSpec = {
+  template: 'aurora',
   brandName: 'Client Name',
-  headline: 'One striking sentence.',      // the first screen
-  subhead: 'Short supporting line.',
-  startLabel: 'Get started',
-  steps: [
-    { kind: 'choice', id: 'treatment', question: 'What are you interested in?', options: [
-      { id: 'prp', emoji: '💧', label: 'Thicker, fuller-looking hair', sublabel: 'PRP hair restoration' },
-      // ...
-    ]},
-    // ...more choice steps (single-select auto-advances; set `multi: true` for multi-select)
-    { kind: 'contact', id: 'contact', question: 'Where should we send details?',
-      fields: ['name', 'phone', 'email'], submitLabel: 'Book my free consultation' },
-  ],
-  legal: 'You must be 18 or older. A consultation is required; individual results vary.',
-  success: { title: 'You’re all set! 🎉', body: 'We’ll reach out shortly.', phone: '(…)', phoneHref: 'tel:+1…' },
+  theme: {
+    primary: '#1F5A45',
+    accent: '#D97941',
+    bodyFontFamily: "'DM Sans', sans-serif",
+    displayFontFamily: "'Cormorant Garamond', serif",
+    // ...background, surface, text, border, and optional Google Fonts URL
+  },
+  // ...SEO, hero, benefits, reviews, FAQ, and final CTA
+  funnel: {
+    steps: [
+      { kind: 'choice', id: 'treatment', question: 'What are you interested in?', options: [
+        { id: 'prp', emoji: '💧', label: 'Thicker, fuller-looking hair', sublabel: 'PRP hair restoration' },
+      ]},
+      { kind: 'contact', id: 'contact', question: 'Where should we send details?',
+        fields: [
+          { id: 'name', label: 'Full name', placeholder: 'Your name' },
+          { id: 'phone', label: 'Phone', placeholder: 'Phone number' },
+          { id: 'email', label: 'Email', placeholder: 'you@email.com' },
+        ],
+        submitLabel: 'Book my free consultation' },
+    ],
+    // ...legal, success state, and reusable UI labels
+  },
 }
 ```
 
@@ -142,22 +153,26 @@ contact step.
 
 ## 5. Brand the look
 
-Colors and fonts live in **`src/app/globals.css`** under `@theme`:
+Colors and fonts live beside the copy in **`src/config/funnel.ts`**:
 
-```css
---color-primary-500: #948CC1;   /* client's main brand color — buttons, progress, accents */
---color-primary-600: #7d74b0;   /* a slightly darker shade for hover */
---color-primary-50:  #f6f1f7;   /* a light tint for selected states */
---font-display: 'Golden Nature', 'Inter', sans-serif;
---font-sans:    'Helvetica Neue', 'Inter', sans-serif;
+```ts
+theme: {
+  primary: '#1F5A45',
+  accent: '#D97941',
+  background: '#F6F1E8',
+  surface: '#FFFDF8',
+  text: '#17221D',
+  textMuted: '#66736C',
+  border: '#D9DED7',
+  bodyFontFamily: "'DM Sans', sans-serif",
+  displayFontFamily: "'Cormorant Garamond', serif",
+  fontStylesheetUrl: 'https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600;700&family=DM+Sans:wght@400;500;600;700&display=swap',
+}
 ```
 
-Set at least `primary-50/500/600` from the client's palette (step 1). The funnel's buttons,
-progress rail, and selection states all read from `primary`, so this one change re-skins the
-whole flow. Dark mode is available via `site-config.ts` (`theme: 'dark'`).
-
-> Roadmap: these can be pulled automatically from Sapt branding at runtime so you don't
-> hand-edit CSS — see the plan in `sapt-platform/docs/superpowers/plans/`.
+The template derives the lighter and darker interaction shades from `primary` and `accent`.
+Set all neutral tokens deliberately for either a light or dark design; no component edits are
+needed.
 
 ---
 

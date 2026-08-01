@@ -6,8 +6,8 @@
  *
  *   1. POST → CRM   — save a record to a CRM object type you created (booking).
  *                     Public: needs only the Project ID.
- *   2. GET  → CMS   — read content by slug. Requires `SAPT_API_KEY`; returns
- *                     null when no key is set (the site uses hardcoded copy).
+ *   2. GET  → CMS   — read explicitly published content by slug. Public and
+ *                     credential-free; drafts remain behind Sapt auth.
  *
  * Analytics is the third Sapt touchpoint and is a script tag, not a fetch —
  * see `src/components/Analytics.tsx`.
@@ -87,13 +87,12 @@ export async function ingestObject(typeSlug: string, input: IngestObjectInput) {
 }
 
 // ============================================================================
-// 2. GET → CMS (requires SAPT_API_KEY) — optional, off until a key is set
+// 2. GET → published CMS (public, Project ID only)
 // ============================================================================
 //
-// The template renders hardcoded copy from `site-config.ts` by default. Set
-// `SAPT_API_KEY` and flip `useCmsContent` to pull section copy from the Sapt
-// CMS instead (see `src/lib/content.ts`). With no key this returns null and
-// the hardcoded fallback is used — so the site always renders.
+// Published content is safe to render on a public website and is exposed by a
+// dedicated endpoint. The hardcoded spec remains only as a resilient fallback
+// when the project is missing, unavailable, or has no published item.
 
 export interface CMSContentItem {
   id: string
@@ -106,20 +105,20 @@ export interface CMSContentItem {
 }
 
 /**
- * Fetch a single published CMS item by slug. Returns null when no API key is
- * configured or the item doesn't exist.
- * GET /projects/{projectId}/cms/content/{contentTypeSlug}/{slug}
+ * Fetch a single published CMS item by slug. Returns null when the project is
+ * not configured or the item doesn't exist.
+ * GET /public/projects/{projectId}/cms/content/{contentTypeSlug}/{slug}
  */
 export async function cmsGetBySlug(
   contentTypeSlug: string,
   itemSlug: string
 ): Promise<CMSContentItem | null> {
-  const { baseUrl, projectId, apiKey } = getSaptServerConfig()
-  if (!apiKey) return null
+  const { baseUrl, projectId } = getSaptServerConfig()
+  if (!projectId) return null
 
   const res = await saptFetch<{ item: CMSContentItem }>(
-    `${baseUrl}/projects/${projectId}/cms/content/${contentTypeSlug}/${itemSlug}`,
-    { apiKey, next: { revalidate: 300 } } as RequestInit & { apiKey: string }
+    `${baseUrl}/public/projects/${projectId}/cms/content/${contentTypeSlug}/${itemSlug}`,
+    { next: { revalidate: 60 } } as RequestInit
   )
   return res.data?.item ?? null
 }

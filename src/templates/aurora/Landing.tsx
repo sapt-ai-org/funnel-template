@@ -83,7 +83,7 @@ export function Landing({ spec }: { spec: LandingSpec }) {
             <div className="mb-5 flex flex-col items-center gap-1.5">
               <Stars />
               <p className="text-sm text-text-muted">
-                <span className="font-semibold text-text">{spec.hero.rating.score}</span> from {spec.hero.rating.count}
+                <span className="font-semibold text-text">{spec.hero.rating.score}</span> {spec.reviewConnector} {spec.hero.rating.count}
               </p>
             </div>
           )}
@@ -206,7 +206,7 @@ export function Landing({ spec }: { spec: LandingSpec }) {
 
       <footer className="border-t border-border py-10 text-center text-sm text-text-light">
         <p className="font-display font-bold text-text">{spec.brandName}</p>
-        <p className="mt-1">© {new Date().getFullYear()} {spec.brandName}. All rights reserved.</p>
+        <p className="mt-1">© {new Date().getFullYear()} {spec.brandName}. {spec.footerSuffix}</p>
       </footer>
 
       {open && <FunnelOverlay flow={spec.funnel} brandName={spec.brandName} onClose={() => setOpen(false)} />}

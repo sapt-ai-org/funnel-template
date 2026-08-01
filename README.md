@@ -29,7 +29,7 @@ generates the OpenNext Worker before publishing it.
 - Aurora and Mono visual templates, plus local preview routes for comparing them.
 - Sapt CRM lead capture through the public `booking` ingestion endpoint.
 - Sapt analytics for page views, CTA interactions, funnel steps, and attribution parameters.
-- An optional authenticated CMS read path for teams that want runtime-managed copy.
+- An optional published-CMS read helper for sections that truly need runtime-managed copy.
 
 ## Local development
 
@@ -45,9 +45,19 @@ Open [http://localhost:2001](http://localhost:2001). Template previews are avail
 
 ## Customize the funnel
 
-The visitor-facing content and funnel flow live in `src/config/funnel.ts`. Brand colors and fonts
-live in `src/app/globals.css`. Change the active template import in `src/app/page.tsx`, or run the
-initializer to select and prune a template:
+The entire visitor experience lives in `src/config/funnel.ts`: template choice, SEO, logo, colors,
+fonts, every landing-page section, every question and option, contact-field labels/placeholders,
+success state, and UI microcopy. Components should contain behavior and layout—not client copy.
+
+For a vibe-coded setup, give your coding agent this prompt:
+
+> Customize this funnel for **[business]** and **[offer]**. Read `README.md` and edit only
+> `src/config/funnel.ts` plus files in `public/` when an asset is needed. Replace every placeholder,
+> choose `aurora` or `mono`, set an intentional color and font system, keep claims compliant, and
+> preserve the existing CRM/analytics behavior. Then run `pnpm test`, `pnpm typecheck`, and
+> `pnpm lint`. Do not add credentials or edit the Sapt Project ID.
+
+You can also run the initializer to select and prune a template:
 
 ```bash
 PROJECT_SLUG=my-funnel TEMPLATE_ID=aurora pnpm init-project
@@ -64,11 +74,9 @@ See [`ONBOARDING.md`](./ONBOARDING.md) for the end-to-end customization workflow
 | `NEXT_PUBLIC_SAPT_BASE_URL` | No | Sapt API base; defaults to `https://api.sapt.ai` |
 | `NEXT_PUBLIC_SAPT_INGEST_URL` | No | Analytics ingest base; defaults to `https://ingest.sapt.ai` |
 | `SAPT_BOOKING_TYPE_SLUG` | No | CRM type used for leads; defaults to `booking` |
-| `SAPT_API_KEY` | No | Server-only secret for optional authenticated CMS reads |
 
-`SAPT_API_KEY` must never be committed or exposed through a `NEXT_PUBLIC_*` variable. The default
-funnel does not need it: content is compiled from `src/config/funnel.ts`, and lead capture uses the
-publicly-ingestable CRM type created by Sapt.
+The default funnel needs no secret: content is compiled from `src/config/funnel.ts`, and lead
+capture uses the publicly-ingestable CRM type created by Sapt.
 
 ## Scripts
 
@@ -88,7 +96,7 @@ publicly-ingestable CRM type created by Sapt.
   credentials.
 - Lead submission uses the project's public ID and a CRM type explicitly marked publicly
   ingestable.
-- Optional CMS access runs server-side and requires a separately configured Worker secret.
+- Optional CMS access runs server-side and can read only explicitly published content.
 - `.env*`, `.dev.vars*`, npm credentials, build output, and Wrangler state are ignored by Git.
 - Cloudflare owns GitHub authorization and deployment credentials during the Deploy flow; this
   repository does not receive or store them.

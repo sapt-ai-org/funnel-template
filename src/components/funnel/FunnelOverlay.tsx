@@ -19,10 +19,10 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 type Answers = Record<string, string | string[]>
 type Contact = { name: string; email: string; phone: string }
 
-const FIELD_META = {
-  name: { label: 'Full name', type: 'text', inputMode: 'text', autoComplete: 'name', placeholder: 'Your name' },
-  email: { label: 'Email', type: 'email', inputMode: 'email', autoComplete: 'email', placeholder: 'you@email.com' },
-  phone: { label: 'Phone', type: 'tel', inputMode: 'tel', autoComplete: 'tel', placeholder: '(555) 123-4567' },
+const FIELD_BEHAVIOR = {
+  name: { type: 'text', inputMode: 'text', autoComplete: 'name' },
+  email: { type: 'email', inputMode: 'email', autoComplete: 'email' },
+  phone: { type: 'tel', inputMode: 'tel', autoComplete: 'tel' },
 } as const
 
 export function FunnelOverlay({ flow, brandName, onClose }: { flow: FunnelFlow; brandName: string; onClose: () => void }) {
@@ -92,10 +92,11 @@ export function FunnelOverlay({ flow, brandName, onClose }: { flow: FunnelFlow; 
   }
 
   const contactStep = currentStep?.kind === 'contact' ? (currentStep as ContactStep) : null
+  const contactFieldIds = contactStep?.fields.map((field) => field.id) ?? []
   const contactValid =
-    /.+@.+\..+/.test(contact.email.trim()) &&
-    (!contactStep?.fields.includes('name') || !!contact.name.trim()) &&
-    (!contactStep?.fields.includes('phone') || phoneDigits(contact.phone).length === 10)
+    (!contactFieldIds.includes('email') || /.+@.+\..+/.test(contact.email.trim())) &&
+    (!contactFieldIds.includes('name') || !!contact.name.trim()) &&
+    (!contactFieldIds.includes('phone') || phoneDigits(contact.phone).length === 10)
 
   const submit = async () => {
     if (submitting || !contactValid) return
@@ -120,11 +121,11 @@ export function FunnelOverlay({ flow, brandName, onClose }: { flow: FunnelFlow; 
         }),
       })
       const data = (await res.json()) as { ok: boolean; error?: string }
-      if (!res.ok || !data.ok) throw new Error(data.error || 'Something went wrong')
+      if (!res.ok || !data.ok) throw new Error(data.error || flow.ui.genericError)
       track('funnel_confirmed', { service: firstChoiceLead.serviceName })
       goNext()
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'We couldn’t submit that. Please try again.')
+      setError(err instanceof Error ? err.message : flow.ui.genericError)
     } finally {
       setSubmitting(false)
     }
@@ -146,13 +147,13 @@ export function FunnelOverlay({ flow, brandName, onClose }: { flow: FunnelFlow; 
             onClick={goBack}
             className="absolute left-5 inline-flex items-center gap-1 rounded-full px-2 py-1 text-sm text-text-muted transition-colors hover:text-text sm:left-8"
           >
-            <ArrowLeft className="h-4 w-4" /> Back
+            <ArrowLeft className="h-4 w-4" /> {flow.ui.backLabel}
           </button>
         )}
         <span className="font-display text-lg font-bold tracking-tight">{brandName}</span>
         <button
           onClick={onClose}
-          aria-label="Close"
+          aria-label={flow.ui.closeLabel}
           className="absolute right-5 flex h-9 w-9 items-center justify-center rounded-full text-text-muted transition-colors hover:bg-border hover:text-text sm:right-8"
         >
           <X className="h-5 w-5" />
@@ -207,7 +208,7 @@ export function FunnelOverlay({ flow, brandName, onClose }: { flow: FunnelFlow; 
 
                   {step.multi && (
                     <button onClick={goNext} disabled={selectedArr.length === 0} className="mx-auto mt-6 inline-flex w-full max-w-md items-center justify-center gap-2 rounded-full bg-primary-500 py-4 text-base font-semibold text-white shadow-lg transition-all hover:bg-primary-600 disabled:cursor-not-allowed disabled:opacity-40">
-                      Continue <ArrowRight className="h-5 w-5" />
+                      {flow.ui.continueLabel} <ArrowRight className="h-5 w-5" />
                     </button>
                   )}
                 </div>
@@ -223,21 +224,21 @@ export function FunnelOverlay({ flow, brandName, onClose }: { flow: FunnelFlow; 
               </div>
               <div className="mt-8 space-y-4">
                 {contactStep.fields.map((field, i) => {
-                  const meta = FIELD_META[field]
+                  const meta = FIELD_BEHAVIOR[field.id]
                   return (
-                    <div key={field}>
-                      <label htmlFor={`f-${field}`} className="mb-1.5 block text-sm font-medium">{meta.label}</label>
+                    <div key={field.id}>
+                      <label htmlFor={`f-${field.id}`} className="mb-1.5 block text-sm font-medium">{field.label}</label>
                       <input
-                        id={`f-${field}`}
+                        id={`f-${field.id}`}
                         type={meta.type}
                         inputMode={meta.inputMode as React.HTMLAttributes<HTMLInputElement>['inputMode']}
                         autoComplete={meta.autoComplete}
                         enterKeyHint={i === contactStep.fields.length - 1 ? 'done' : 'next'}
-                        value={contact[field]}
+                        value={contact[field.id]}
                         onChange={(e) =>
-                          setContact((c) => ({ ...c, [field]: field === 'phone' ? formatPhone(e.target.value) : e.target.value }))
+                          setContact((c) => ({ ...c, [field.id]: field.id === 'phone' ? formatPhone(e.target.value) : e.target.value }))
                         }
-                        placeholder={meta.placeholder}
+                        placeholder={field.placeholder}
                         className="w-full rounded-2xl border border-transparent bg-surface px-4 py-4 shadow-sm outline-none transition-all focus:shadow-md focus:ring-4 focus:ring-primary-500/20"
                       />
                     </div>
@@ -245,7 +246,7 @@ export function FunnelOverlay({ flow, brandName, onClose }: { flow: FunnelFlow; 
                 })}
               </div>
               <button onClick={submit} disabled={submitting || !contactValid} className="mt-6 inline-flex w-full items-center justify-center gap-2 rounded-full bg-primary-500 py-4 text-base font-semibold text-white shadow-lg transition-all hover:bg-primary-600 disabled:cursor-not-allowed disabled:opacity-40">
-                {submitting ? (<><Loader2 className="h-5 w-5 animate-spin" /> Submitting…</>) : (<>{contactStep.submitLabel} <ArrowRight className="h-5 w-5" /></>)}
+                {submitting ? (<><Loader2 className="h-5 w-5 animate-spin" /> {flow.ui.submittingLabel}</>) : (<>{contactStep.submitLabel} <ArrowRight className="h-5 w-5" /></>)}
               </button>
               {error && <p className="mt-3 text-center text-sm text-red-600" role="alert">{error}</p>}
               {flow.legal && <p className="mt-4 text-center text-xs text-text-light">{flow.legal}</p>}
@@ -266,7 +267,7 @@ export function FunnelOverlay({ flow, brandName, onClose }: { flow: FunnelFlow; 
                 </a>
               )}
               <div className="mt-6">
-                <button onClick={onClose} className="text-sm text-text-muted underline-offset-4 hover:text-text hover:underline">Back to site</button>
+                <button onClick={onClose} className="text-sm text-text-muted underline-offset-4 hover:text-text hover:underline">{flow.ui.backToSiteLabel}</button>
               </div>
             </div>
           )}

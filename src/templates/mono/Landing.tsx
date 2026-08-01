@@ -57,7 +57,7 @@ export function Landing({ spec }: { spec: LandingSpec }) {
           <p className="mb-8 flex items-center gap-2 text-sm text-text-muted">
             <Star className="h-4 w-4 fill-text text-text" />
             <span className="font-semibold text-text">{spec.hero.rating.score}</span>
-            <span>from {spec.hero.rating.count}</span>
+            <span>{spec.reviewConnector} {spec.hero.rating.count}</span>
           </p>
         )}
         <h1 className="max-w-3xl font-display text-[2.75rem] font-black leading-[0.98] tracking-tight sm:text-6xl md:text-7xl">
@@ -191,7 +191,7 @@ export function Landing({ spec }: { spec: LandingSpec }) {
       </section>
 
       <footer className="mx-auto max-w-5xl px-5 py-10 text-xs uppercase tracking-widest text-text-light">
-        © {new Date().getFullYear()} {spec.brandName}
+        © {new Date().getFullYear()} {spec.brandName} · {spec.footerSuffix}
       </footer>
 
       {/* ── Persistent bottom CTA bar ── */}

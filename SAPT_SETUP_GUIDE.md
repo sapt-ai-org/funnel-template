@@ -6,8 +6,8 @@ else — and no SDK; everything is plain REST plus one script tag:
 1. **Analytics** (script) — works with just your Project ID.
 2. **POST → CRM** — the booking funnel saves a record to a `booking` object type. **You must
    create that type once** (one MCP call) or bookings can't save.
-3. **GET → CMS** — off by default; the site renders hardcoded copy. Add an API key to pull
-   section copy from the CMS instead.
+3. **GET → CMS** — off by default; an optional helper can read explicitly published section
+   content using the public Project ID.
 
 ---
 
@@ -62,25 +62,15 @@ Set the values you need:
 | `NEXT_PUBLIC_SAPT_PROJECT_ID` | ✅ | Analytics + booking funnel (POST → CRM) |
 | `NEXT_PUBLIC_SAPT_BASE_URL` | – | API base (default `https://api.sapt.ai`) |
 | `NEXT_PUBLIC_SAPT_INGEST_URL` | – | Analytics ingest (default `https://ingest.sapt.ai`) |
-| `SAPT_API_KEY` | – | **Server-only.** Enables the GET → CMS read |
 | `SAPT_BOOKING_TYPE_SLUG` | – | CRM type slug for bookings (default `booking`) |
 
 Restart `pnpm dev` after editing `.env.local`.
 
-> **Security:** `SAPT_API_KEY` is a secret. Never prefix it with `NEXT_PUBLIC_`, never commit
-> it, and only ever use it from server code (it already is — `src/lib/sapt-server.ts`).
-
 ### Theme & CMS content
 
-Two flags in `src/config/site-config.ts`:
-
-- **`theme`** — `'light'` or `'dark'` (default `'light'`). Controls the light/dark CSS variables
-  in `globals.css`.
-- **`useCmsContent`** — boolean (default `false`). When `true` and `SAPT_API_KEY` is set, pulls
-  section copy from the Sapt CMS instead of hardcoded `site-config.ts` (section 5).
-
-Both default to hardcoded; edit `site-config.ts` and `globals.css` to customize without
-touching Sapt.
+`src/config/funnel.ts` is the single source of truth for the live funnel, including its theme.
+`useCmsContent` in `src/config/site-config.ts` stays `false` unless a developer deliberately uses
+the optional section resolver described in section 5.
 
 ## 3. How each feature is wired
 
@@ -169,20 +159,19 @@ UTM params.
 
 ## 5. Optional: CMS-driven content
 
-By default, page copy lives in `src/config/site-config.ts`. To drive copy from the Sapt CMS
-instead, set `SAPT_API_KEY` (CMS reads require authentication). Then read content in a
-**server component**:
+By default, all live funnel content lives in `src/config/funnel.ts`. If a future section genuinely
+needs runtime-managed content, read an explicitly published CMS item from a **server component**:
 
 ```tsx
 import { cmsGetBySlug } from '@/lib/sapt-server'
 
-// Fetch one published item by slug (returns null when no API key is set)
+// Fetch one published item by slug (returns null when missing or unpublished)
 const hero = await cmsGetBySlug('section', 'hero')
 ```
 
-`cmsGetBySlug` returns `null` when no API key is set, so it's safe to call with a fallback to
-`site-config`. The template already does this via `resolveContent` (`src/lib/content.ts`),
-gated by the `useCmsContent` flag — flip it on once your key and CMS content are in place.
+`cmsGetBySlug` exposes no drafts and requires no secret. `resolveContent` in `src/lib/content.ts`
+can layer a published record over code defaults, gated by `useCmsContent`. This is intentionally an
+extension point—the main funnel does not silently hand ownership to CMS content.
 
 ## 6. Deploy
 
@@ -197,8 +186,6 @@ pnpm deploy
 ```
 
 - Set `NEXT_PUBLIC_SAPT_PROJECT_ID` in the build environment.
-- If you enable CMS content at runtime, add `SAPT_API_KEY` with `wrangler secret put`; never put it
-  in source code or a `NEXT_PUBLIC_*` variable.
 - Attach a custom domain in the Cloudflare dashboard or with a `routes` entry in `wrangler.jsonc`.
 
 ## 7. Troubleshooting
@@ -213,8 +200,8 @@ pnpm deploy
   objects with a `new` slug. Check the server logs for `[/api/book] CRM record failed`.
 
 **CMS content is empty**
-- CMS requires `SAPT_API_KEY` at runtime (set it as a Worker secret), and items must be
-  `published`.
+- Confirm the item is `published`, the Project ID is correct, and `useCmsContent` was deliberately
+  enabled for the section using it.
 
 ---
 
