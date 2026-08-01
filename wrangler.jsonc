@@ -5,11 +5,20 @@
   // ════════════════════════════════════════════════════════════
   "name": "sample-website",
   "main": ".open-next/worker.js",
-  "compatibility_date": "2025-03-01",
+  "compatibility_date": "2026-08-01",
   "compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
+  // Deploy Buttons normally detect the package.json deploy script. This build
+  // hook also makes Cloudflare's default `npx wrangler deploy` path safe: the
+  // OpenNext Worker is generated before Wrangler reads the entry point.
+  "build": {
+    "command": "pnpm exec opennextjs-cloudflare build"
+  },
   "assets": {
     "directory": ".open-next/assets",
     "binding": "ASSETS"
+  },
+  "observability": {
+    "enabled": true
   }
   // ════════════════════════════════════════════════════════════
   // OPTIONAL: Bind a custom domain/subdomain. With Workers Builds

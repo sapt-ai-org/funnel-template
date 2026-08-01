@@ -9,14 +9,18 @@ Sapt's internal client funnel template, without the private deployment orchestra
 ## Before you deploy
 
 1. In Sapt, open **Project Settings → Funnel**.
-2. Select **Prepare funnel** to create the `booking` CRM type and starter CMS content.
+2. Select **Prepare project** to create the `booking` CRM type and starter CMS content.
 3. Copy the Project ID shown on that page.
-4. Select **Deploy to Cloudflare** and paste the Project ID when Cloudflare asks for
+4. Select **Continue to Cloudflare** and paste the Project ID when Cloudflare asks for
    `NEXT_PUBLIC_SAPT_PROJECT_ID`.
 
 Cloudflare copies this repository into your GitHub account, configures Workers Builds, and deploys
 the site to your Cloudflare account. The Project ID is a public identifier. Do not paste a Sapt API
 key, GitHub token, or Cloudflare token into source files, AI prompts, or any `NEXT_PUBLIC_*` value.
+
+The template declares the standard `build` and `deploy` scripts Cloudflare's Deploy Button reads.
+It also includes a Wrangler build hook, so Cloudflare's fallback `npx wrangler deploy` command still
+generates the OpenNext Worker before publishing it.
 
 ## What you get
 
@@ -75,6 +79,7 @@ publicly-ingestable CRM type created by Sapt.
 | `pnpm typecheck` | Run TypeScript checks |
 | `pnpm lint` | Run ESLint |
 | `pnpm test` | Run template and funnel tests |
+| `pnpm preview` | Build and preview in the Cloudflare Workers runtime |
 | `pnpm deploy` | Build with OpenNext and deploy to Cloudflare Workers |
 
 ## Security model
