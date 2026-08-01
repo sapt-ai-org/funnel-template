@@ -1,0 +1,114 @@
+{
+  "$comment": "Structures this template needs. On Initialize, the Sapt platform reads this and provisions them into the client's project (idempotent). Edit here to change what a new client gets.",
+  "objectTypes": [
+    {
+      "slug": "booking",
+      "name": "Booking",
+      "description": "Leads captured by the funnel. Public-ingestable; links to a Person by email/phone.",
+      "icon": "CalendarCheck",
+      "color": "#948cc1",
+      "isPublicIngestable": true,
+      "linksToPerson": true,
+      "schema": {
+        "name": { "label": "Name", "schema": { "type": "string", "options": {} } },
+        "email": { "label": "Email", "schema": { "type": "string", "options": { "format": "email" } } },
+        "phone": { "label": "Phone", "schema": { "type": "string", "options": { "format": "phone" } } },
+        "service": { "label": "Service", "schema": { "type": "string", "options": {} } },
+        "status": {
+          "label": "Status",
+          "schema": {
+            "type": "select",
+            "options": {
+              "choices": [
+                { "id": "new", "slug": "new", "label": "New" },
+                { "id": "contacted", "slug": "contacted", "label": "Contacted" },
+                { "id": "booked", "slug": "booked", "label": "Booked" }
+              ]
+            }
+          }
+        },
+        "source": { "label": "Source", "schema": { "type": "string", "options": {} } },
+        "answers": { "label": "Answers (JSON)", "schema": { "type": "string", "options": { "format": "long-text" } } }
+      }
+    }
+  ],
+  "contentTypes": [
+    {
+      "slug": "funnel",
+      "name": "Funnel",
+      "description": "The lead funnel's content. One item, slug \"home\", read by the funnel at runtime.",
+      "icon": "Rocket",
+      "schema": {
+        "brandName": { "label": "Brand name", "schema": { "type": "string", "options": {} } },
+        "headline": { "label": "Headline (intro)", "schema": { "type": "string", "options": {}, "required": true } },
+        "subhead": { "label": "Subhead", "schema": { "type": "string", "options": {} } },
+        "startLabel": { "label": "Start button label", "schema": { "type": "string", "options": {} } },
+        "videoUrl": { "label": "Hero video URL (optional)", "schema": { "type": "string", "options": { "format": "url" } } },
+        "testimonials": { "label": "Testimonials", "description": "{author, text, rating}", "schema": { "type": "object", "options": {}, "multiple": {} } },
+        "questions": { "label": "Funnel questions", "description": "{id, question, help?, options:[{id,label,sublabel?,emoji?}]}", "schema": { "type": "object", "options": {}, "multiple": {} } },
+        "contactHeadline": { "label": "Contact step headline", "schema": { "type": "string", "options": {} } },
+        "submitLabel": { "label": "Submit button label", "schema": { "type": "string", "options": {} } },
+        "legal": { "label": "Legal / consent line", "schema": { "type": "string", "options": {} } },
+        "successTitle": { "label": "Success title", "schema": { "type": "string", "options": {} } },
+        "successBody": { "label": "Success body", "schema": { "type": "string", "options": {} } }
+      }
+    }
+  ],
+  "content": [
+    {
+      "contentTypeSlug": "funnel",
+      "slug": "home",
+      "name": "Funnel — Home",
+      "status": "published",
+      "content": {
+        "brandName": "Your Brand",
+        "headline": "Book your free consultation in 30 seconds.",
+        "subhead": "Answer a few quick questions and we’ll match you with the right option.",
+        "startLabel": "Get started",
+        "testimonials": [
+          { "author": "Placeholder — replace with a real review", "text": "The team took time to explain my options and answered every question. Genuinely helpful.", "rating": 5 },
+          { "author": "Placeholder — replace with a real review", "text": "Professional and straightforward from the first call. I felt informed, never pressured.", "rating": 5 }
+        ],
+        "questions": [
+          {
+            "id": "goal",
+            "question": "What are you interested in?",
+            "help": "Pick the one closest to your goal.",
+            "options": [
+              { "id": "option_one", "label": "Option one", "emoji": "✨" },
+              { "id": "option_two", "label": "Option two", "emoji": "💧" }
+            ]
+          },
+          {
+            "id": "timing",
+            "question": "When would you like to start?",
+            "options": [
+              { "id": "asap", "label": "As soon as possible", "emoji": "🔥" },
+              { "id": "month", "label": "Within a month", "emoji": "📅" },
+              { "id": "exploring", "label": "Just exploring", "emoji": "👀" }
+            ]
+          }
+        ],
+        "contactHeadline": "Where should we send your consultation details?",
+        "submitLabel": "Book my free consultation",
+        "legal": "You must be 18 or older. A consultation is required; individual results vary.",
+        "successTitle": "You’re all set! 🎉",
+        "successBody": "Thanks — our team will reach out shortly to book your free consultation."
+      }
+    }
+  ],
+  "branding": {
+    "description": "Clean, modern, trustworthy aesthetic for a high-converting lead funnel.",
+    "keywords": ["clean", "modern", "trustworthy"],
+    "fontStyleCategory": "modern",
+    "colors": [
+      { "name": "Primary", "hex": "#948CC1", "purpose": "primary" },
+      { "name": "Accent", "hex": "#C890AC", "purpose": "accent" },
+      { "name": "Background", "hex": "#FAFAFA", "purpose": "background" },
+      { "name": "Text", "hex": "#1F2937", "purpose": "text" }
+    ],
+    "fonts": [
+      { "id": "inter", "name": "Inter", "type": "primary", "source": "google", "googleFontFamily": "Inter", "weights": [400, 500, 600, 700] }
+    ]
+  }
+}

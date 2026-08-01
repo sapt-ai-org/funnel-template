@@ -1,20 +1,23 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
-  "name": "sapt-funnel-template",
-  "main": "src/worker/index.ts",
-  "compatibility_date": "2026-06-21",
-  "compatibility_flags": ["nodejs_compat"],
-  "observability": {
-    "enabled": true
-  },
-  "vars": {
-    "SAPT_ENDPOINT": "https://api.sapt.ai",
-    "SAPT_INGEST_SCRIPT_URL": "https://ingest.sapt.ai/v1/track.js"
-  },
+  // ════════════════════════════════════════════════════════════
+  // ⬇️ CHANGE THIS: Your worker name (e.g., "clientname-landing")
+  // ════════════════════════════════════════════════════════════
+  "name": "sample-website",
+  "main": ".open-next/worker.js",
+  "compatibility_date": "2025-03-01",
+  "compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
   "assets": {
-    "directory": "./dist",
-    "binding": "ASSETS",
-    "not_found_handling": "single-page-application",
-    "run_worker_first": ["/api/*"]
+    "directory": ".open-next/assets",
+    "binding": "ASSETS"
   }
+  // ════════════════════════════════════════════════════════════
+  // OPTIONAL: Bind a custom domain/subdomain. With Workers Builds
+  // or `wrangler deploy` you can instead attach a route in the
+  // Cloudflare dashboard. Example:
+  //
+  // "routes": [
+  //   { "pattern": "clientname.example.com/*", "zone_id": "<your-zone-id>" }
+  // ]
+  // ════════════════════════════════════════════════════════════
 }
