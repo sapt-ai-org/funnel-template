@@ -4,31 +4,233 @@
     {
       "slug": "booking",
       "name": "Booking",
-      "description": "Leads captured by the funnel. Public-ingestable; links to a Person by email/phone.",
+      "description": "Leads from the funnel and feedback from the review flow. Public-ingestable; links to a Person by email/phone. Every field the site posts is declared here so it lands as a real column a workflow can branch on, not as a pending field.",
       "icon": "CalendarCheck",
       "color": "#948cc1",
       "isPublicIngestable": true,
       "linksToPerson": true,
       "schema": {
-        "name": { "label": "Name", "schema": { "type": "string", "options": {} } },
-        "email": { "label": "Email", "schema": { "type": "string", "options": { "format": "email" } } },
-        "phone": { "label": "Phone", "schema": { "type": "string", "options": { "format": "phone" } } },
-        "service": { "label": "Service", "schema": { "type": "string", "options": {} } },
+        "name": {
+          "label": "Name",
+          "schema": {
+            "type": "string",
+            "options": {},
+            "required": true
+          }
+        },
+        "email": {
+          "label": "Email",
+          "schema": {
+            "type": "string",
+            "options": {
+              "format": "email"
+            }
+          }
+        },
+        "phone": {
+          "label": "Phone",
+          "schema": {
+            "type": "string",
+            "options": {
+              "format": "phone"
+            }
+          }
+        },
+        "vehicle": {
+          "label": "Vehicle",
+          "schema": {
+            "type": "string",
+            "options": {}
+          },
+          "description": "Year, make and model as the customer typed it."
+        },
+        "issue": {
+          "label": "Issue",
+          "schema": {
+            "type": "select",
+            "options": {
+              "choices": [
+                {
+                  "id": "warning_light",
+                  "slug": "warning_light",
+                  "label": "Warning light"
+                },
+                {
+                  "id": "brakes",
+                  "slug": "brakes",
+                  "label": "Brakes"
+                },
+                {
+                  "id": "noise",
+                  "slug": "noise",
+                  "label": "Noise or vibration"
+                },
+                {
+                  "id": "wont_start",
+                  "slug": "wont_start",
+                  "label": "Will not start"
+                },
+                {
+                  "id": "maintenance",
+                  "slug": "maintenance",
+                  "label": "Routine maintenance"
+                },
+                {
+                  "id": "not_sure",
+                  "slug": "not_sure",
+                  "label": "Not sure"
+                }
+              ]
+            }
+          },
+          "description": "Mirrors the funnel step ids exactly. Change one and you must change the other."
+        },
+        "timing": {
+          "label": "Timing",
+          "schema": {
+            "type": "select",
+            "options": {
+              "choices": [
+                {
+                  "id": "today",
+                  "slug": "today",
+                  "label": "Today"
+                },
+                {
+                  "id": "this_week",
+                  "slug": "this_week",
+                  "label": "This week"
+                },
+                {
+                  "id": "flexible",
+                  "slug": "flexible",
+                  "label": "Flexible"
+                }
+              ]
+            }
+          },
+          "description": "How soon they need it in. Drives which lead gets called first."
+        },
+        "service": {
+          "label": "Service",
+          "schema": {
+            "type": "string",
+            "options": {}
+          },
+          "description": "Human-readable label for what they picked."
+        },
         "status": {
           "label": "Status",
           "schema": {
             "type": "select",
             "options": {
               "choices": [
-                { "id": "new", "slug": "new", "label": "New" },
-                { "id": "contacted", "slug": "contacted", "label": "Contacted" },
-                { "id": "booked", "slug": "booked", "label": "Booked" }
+                {
+                  "id": "new",
+                  "slug": "new",
+                  "label": "New"
+                },
+                {
+                  "id": "contacted",
+                  "slug": "contacted",
+                  "label": "Contacted"
+                },
+                {
+                  "id": "booked",
+                  "slug": "booked",
+                  "label": "Booked"
+                },
+                {
+                  "id": "in_shop",
+                  "slug": "in_shop",
+                  "label": "In the shop"
+                },
+                {
+                  "id": "completed",
+                  "slug": "completed",
+                  "label": "Completed"
+                },
+                {
+                  "id": "lost",
+                  "slug": "lost",
+                  "label": "Lost"
+                }
               ]
             }
+          },
+          "description": "A shop pipeline, not a generic one. Records land on `new`."
+        },
+        "source": {
+          "label": "Source",
+          "schema": {
+            "type": "select",
+            "options": {
+              "choices": [
+                {
+                  "id": "booking_funnel",
+                  "slug": "booking_funnel",
+                  "label": "Website funnel"
+                },
+                {
+                  "id": "feedback",
+                  "slug": "feedback",
+                  "label": "Review feedback"
+                },
+                {
+                  "id": "phone",
+                  "slug": "phone",
+                  "label": "Phone"
+                },
+                {
+                  "id": "walk_in",
+                  "slug": "walk_in",
+                  "label": "Walk-in"
+                }
+              ]
+            }
+          },
+          "description": "`feedback` rows come from a customer who rated below the review threshold. They are service recovery, not leads, and should not be counted as one."
+        },
+        "rating": {
+          "label": "Rating",
+          "schema": {
+            "type": "number",
+            "options": {}
+          },
+          "description": "Only on `feedback` rows: the stars they gave before being asked what went wrong."
+        },
+        "preferredDate": {
+          "label": "Preferred date",
+          "schema": {
+            "type": "string",
+            "options": {}
           }
         },
-        "source": { "label": "Source", "schema": { "type": "string", "options": {} } },
-        "answers": { "label": "Answers (JSON)", "schema": { "type": "string", "options": { "format": "long-text" } } }
+        "preferredTime": {
+          "label": "Preferred time",
+          "schema": {
+            "type": "string",
+            "options": {}
+          }
+        },
+        "saptVisitorId": {
+          "label": "Sapt visitor id",
+          "schema": {
+            "type": "string",
+            "options": {}
+          },
+          "description": "Ties the lead back to its first-party session."
+        },
+        "answers": {
+          "label": "Answers (JSON)",
+          "schema": {
+            "type": "string",
+            "options": {
+              "format": "long-text"
+            }
+          },
+          "description": "Raw funnel answers. The ones worth reporting on are promoted to real fields above."
+        }
       }
     }
   ],
@@ -39,18 +241,97 @@
       "description": "The lead funnel's content. One item, slug \"home\", read by the funnel at runtime.",
       "icon": "Rocket",
       "schema": {
-        "brandName": { "label": "Brand name", "schema": { "type": "string", "options": {} } },
-        "headline": { "label": "Headline (intro)", "schema": { "type": "string", "options": {}, "required": true } },
-        "subhead": { "label": "Subhead", "schema": { "type": "string", "options": {} } },
-        "startLabel": { "label": "Start button label", "schema": { "type": "string", "options": {} } },
-        "videoUrl": { "label": "Hero video URL (optional)", "schema": { "type": "string", "options": { "format": "url" } } },
-        "testimonials": { "label": "Testimonials", "description": "{author, text, rating}", "schema": { "type": "object", "options": {}, "multiple": {} } },
-        "questions": { "label": "Funnel questions", "description": "{id, question, help?, options:[{id,label,sublabel?,emoji?}]}", "schema": { "type": "object", "options": {}, "multiple": {} } },
-        "contactHeadline": { "label": "Contact step headline", "schema": { "type": "string", "options": {} } },
-        "submitLabel": { "label": "Submit button label", "schema": { "type": "string", "options": {} } },
-        "legal": { "label": "Legal / consent line", "schema": { "type": "string", "options": {} } },
-        "successTitle": { "label": "Success title", "schema": { "type": "string", "options": {} } },
-        "successBody": { "label": "Success body", "schema": { "type": "string", "options": {} } }
+        "brandName": {
+          "label": "Brand name",
+          "schema": {
+            "type": "string",
+            "options": {}
+          }
+        },
+        "headline": {
+          "label": "Headline (intro)",
+          "schema": {
+            "type": "string",
+            "options": {},
+            "required": true
+          }
+        },
+        "subhead": {
+          "label": "Subhead",
+          "schema": {
+            "type": "string",
+            "options": {}
+          }
+        },
+        "startLabel": {
+          "label": "Start button label",
+          "schema": {
+            "type": "string",
+            "options": {}
+          }
+        },
+        "videoUrl": {
+          "label": "Hero video URL (optional)",
+          "schema": {
+            "type": "string",
+            "options": {
+              "format": "url"
+            }
+          }
+        },
+        "testimonials": {
+          "label": "Testimonials",
+          "description": "{author, text, rating}",
+          "schema": {
+            "type": "object",
+            "options": {},
+            "multiple": {}
+          }
+        },
+        "questions": {
+          "label": "Funnel questions",
+          "description": "{id, question, help?, options:[{id,label,sublabel?,emoji?}]}",
+          "schema": {
+            "type": "object",
+            "options": {},
+            "multiple": {}
+          }
+        },
+        "contactHeadline": {
+          "label": "Contact step headline",
+          "schema": {
+            "type": "string",
+            "options": {}
+          }
+        },
+        "submitLabel": {
+          "label": "Submit button label",
+          "schema": {
+            "type": "string",
+            "options": {}
+          }
+        },
+        "legal": {
+          "label": "Legal / consent line",
+          "schema": {
+            "type": "string",
+            "options": {}
+          }
+        },
+        "successTitle": {
+          "label": "Success title",
+          "schema": {
+            "type": "string",
+            "options": {}
+          }
+        },
+        "successBody": {
+          "label": "Success body",
+          "schema": {
+            "type": "string",
+            "options": {}
+          }
+        }
       }
     }
   ],
@@ -58,16 +339,24 @@
     {
       "contentTypeSlug": "funnel",
       "slug": "home",
-      "name": "Funnel — Home",
+      "name": "Funnel \u2014 Home",
       "status": "published",
       "content": {
         "brandName": "Your Brand",
         "headline": "Book your free consultation in 30 seconds.",
-        "subhead": "Answer a few quick questions and we’ll match you with the right option.",
+        "subhead": "Answer a few quick questions and we\u2019ll match you with the right option.",
         "startLabel": "Get started",
         "testimonials": [
-          { "author": "Placeholder — replace with a real review", "text": "The team took time to explain my options and answered every question. Genuinely helpful.", "rating": 5 },
-          { "author": "Placeholder — replace with a real review", "text": "Professional and straightforward from the first call. I felt informed, never pressured.", "rating": 5 }
+          {
+            "author": "Placeholder \u2014 replace with a real review",
+            "text": "The team took time to explain my options and answered every question. Genuinely helpful.",
+            "rating": 5
+          },
+          {
+            "author": "Placeholder \u2014 replace with a real review",
+            "text": "Professional and straightforward from the first call. I felt informed, never pressured.",
+            "rating": 5
+          }
         ],
         "questions": [
           {
@@ -75,40 +364,92 @@
             "question": "What are you interested in?",
             "help": "Pick the one closest to your goal.",
             "options": [
-              { "id": "option_one", "label": "Option one", "emoji": "✨" },
-              { "id": "option_two", "label": "Option two", "emoji": "💧" }
+              {
+                "id": "option_one",
+                "label": "Option one",
+                "emoji": "\u2728"
+              },
+              {
+                "id": "option_two",
+                "label": "Option two",
+                "emoji": "\ud83d\udca7"
+              }
             ]
           },
           {
             "id": "timing",
             "question": "When would you like to start?",
             "options": [
-              { "id": "asap", "label": "As soon as possible", "emoji": "🔥" },
-              { "id": "month", "label": "Within a month", "emoji": "📅" },
-              { "id": "exploring", "label": "Just exploring", "emoji": "👀" }
+              {
+                "id": "asap",
+                "label": "As soon as possible",
+                "emoji": "\ud83d\udd25"
+              },
+              {
+                "id": "month",
+                "label": "Within a month",
+                "emoji": "\ud83d\udcc5"
+              },
+              {
+                "id": "exploring",
+                "label": "Just exploring",
+                "emoji": "\ud83d\udc40"
+              }
             ]
           }
         ],
         "contactHeadline": "Where should we send your consultation details?",
         "submitLabel": "Book my free consultation",
         "legal": "You must be 18 or older. A consultation is required; individual results vary.",
-        "successTitle": "You’re all set! 🎉",
-        "successBody": "Thanks — our team will reach out shortly to book your free consultation."
+        "successTitle": "You\u2019re all set! \ud83c\udf89",
+        "successBody": "Thanks \u2014 our team will reach out shortly to book your free consultation."
       }
     }
   ],
   "branding": {
     "description": "Clean, modern, trustworthy aesthetic for a high-converting lead funnel.",
-    "keywords": ["clean", "modern", "trustworthy"],
+    "keywords": [
+      "clean",
+      "modern",
+      "trustworthy"
+    ],
     "fontStyleCategory": "modern",
     "colors": [
-      { "name": "Primary", "hex": "#948CC1", "purpose": "primary" },
-      { "name": "Accent", "hex": "#C890AC", "purpose": "accent" },
-      { "name": "Background", "hex": "#FAFAFA", "purpose": "background" },
-      { "name": "Text", "hex": "#1F2937", "purpose": "text" }
+      {
+        "name": "Primary",
+        "hex": "#948CC1",
+        "purpose": "primary"
+      },
+      {
+        "name": "Accent",
+        "hex": "#C890AC",
+        "purpose": "accent"
+      },
+      {
+        "name": "Background",
+        "hex": "#FAFAFA",
+        "purpose": "background"
+      },
+      {
+        "name": "Text",
+        "hex": "#1F2937",
+        "purpose": "text"
+      }
     ],
     "fonts": [
-      { "id": "inter", "name": "Inter", "type": "primary", "source": "google", "googleFontFamily": "Inter", "weights": [400, 500, 600, 700] }
+      {
+        "id": "inter",
+        "name": "Inter",
+        "type": "primary",
+        "source": "google",
+        "googleFontFamily": "Inter",
+        "weights": [
+          400,
+          500,
+          600,
+          700
+        ]
+      }
     ]
   }
 }

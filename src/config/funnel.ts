@@ -45,7 +45,7 @@ export interface ContactStep {
 }
 
 export interface ContactField {
-  id: 'name' | 'email' | 'phone'
+  id: 'name' | 'email' | 'phone' | 'vehicle'
   label: string
   placeholder: string
 }
@@ -282,6 +282,7 @@ export const landingSpec: LandingSpec = {
           { id: "name", label: "Full name", placeholder: "Your name" },
           { id: "phone", label: "Mobile", placeholder: "Phone number" },
           { id: "email", label: "Email", placeholder: "you@email.com" },
+          { id: "vehicle", label: "Vehicle", placeholder: "Year, make and model" },
         ],
         submitLabel: "Request my appointment",
       },

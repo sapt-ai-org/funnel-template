@@ -50,6 +50,7 @@ export async function POST(request: Request) {
       service: 'Customer feedback',
       status: 'new',
       source: 'feedback',
+      rating,
       answers: JSON.stringify({ rating, comments: body.comments?.trim() || '' }),
     },
   })

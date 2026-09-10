@@ -20,6 +20,7 @@ interface BookingBody {
   phone?: string
   service?: string
   serviceName?: string
+  vehicle?: string
   date?: string // ISO date the visitor requested (optional — lead funnels omit it)
   time?: string // human label, e.g. "2:00 PM"
   answers?: Record<string, unknown> // funnel step answers, keyed by step id
@@ -60,6 +61,12 @@ export async function POST(request: Request) {
       email,
       phone: body.phone,
       service: body.serviceName || body.service,
+      // Promoted out of the answers blob: a shop filters its board by what is
+      // wrong with the car and how soon it needs to be in, and a workflow
+      // cannot branch on a field buried in JSON.
+      ...(typeof body.answers?.issue === 'string' ? { issue: body.answers.issue } : {}),
+      ...(typeof body.answers?.timing === 'string' ? { timing: body.answers.timing } : {}),
+      ...(body.vehicle ? { vehicle: body.vehicle } : {}),
       preferredDate: body.date,
       preferredTime: body.time,
       // `status` targets a Sapt SELECT field. Its choices MUST be stored as

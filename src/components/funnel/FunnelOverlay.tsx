@@ -17,19 +17,22 @@ import { ArrowLeft, ArrowRight, Check, Loader2, Phone, X } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState } from 'react'
 
 type Answers = Record<string, string | string[]>
-type Contact = { name: string; email: string; phone: string }
+type Contact = { name: string; email: string; phone: string; vehicle: string }
 
 const FIELD_BEHAVIOR = {
   name: { type: 'text', inputMode: 'text', autoComplete: 'name' },
   email: { type: 'email', inputMode: 'email', autoComplete: 'email' },
   phone: { type: 'tel', inputMode: 'tel', autoComplete: 'tel' },
+  // No autoComplete: a browser has nothing sensible to offer for "2015
+  // Silverado", and a wrong autofill here is worse than an empty box.
+  vehicle: { type: 'text', inputMode: 'text', autoComplete: 'off' },
 } as const
 
 export function FunnelOverlay({ flow, brandName, onClose }: { flow: FunnelFlow; brandName: string; onClose: () => void }) {
   const total = flow.steps.length
   const [index, setIndex] = useState(0) // 0..total-1 = steps; total = success
   const [answers, setAnswers] = useState<Answers>({})
-  const [contact, setContact] = useState<Contact>({ name: '', email: '', phone: '' })
+  const [contact, setContact] = useState<Contact>({ name: '', email: '', phone: '', vehicle: '' })
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const advancing = useRef(false)
@@ -113,6 +116,7 @@ export function FunnelOverlay({ flow, brandName, onClose }: { flow: FunnelFlow; 
           name: contact.name,
           email: contact.email,
           phone: contact.phone,
+          vehicle: contact.vehicle,
           service: firstChoiceLead.service,
           serviceName: firstChoiceLead.serviceName,
           answers,
