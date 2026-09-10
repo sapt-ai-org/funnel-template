@@ -123,21 +123,27 @@ export interface LandingSpec {
 }
 
 /* ════════════════════════════════════════════════════════════════════════════
-   ⬇️  THE ACTIVE PROJECT — example: an independent med spa. Rewrite the strings.
+   ⬇️  THE ACTIVE PROJECT — an independent auto repair shop.
+
+   Facts about the business (name, address, phone, hours, services, rating) do
+   NOT live here. They live in src/config/business.ts, generated from the
+   Google Business Profile, so the site and the listing cannot disagree.
+   This file is voice and offer only.
    ════════════════════════════════════════════════════════════════════════════ */
 
 export const landingSpec: LandingSpec = {
-  template: "aurora",
-  brandName: "Placeholder Co",
+  template: "mono",
+  brandName: "Demo Auto Repair",
   logo: null,
-  ctaLabel: "Book your free consultation",
+  ctaLabel: "Book an appointment",
   seo: {
-    title: "Placeholder Co — Book a free consultation",
-    description: "Answer a few quick questions and book a free consultation.",
+    title: "Demo Auto Repair — Honest auto repair in Your City, OH",
+    description:
+      "Independent auto repair. Brakes, check engine diagnostics, tires and more. Nationwide 36 month / 36,000 mile warranty. Book online in under a minute.",
   },
   theme: {
-    primary: "#948CC1",
-    accent: "#C890AC",
+    primary: "#C8102E",
+    accent: "#1D4ED8",
     background: "#FAFAFA",
     surface: "#FFFFFF",
     text: "#1F2937",
@@ -151,51 +157,54 @@ export const landingSpec: LandingSpec = {
   footerSuffix: "All rights reserved.",
 
   hero: {
-    eyebrow: "City, State",
-    headline: "One striking sentence about the outcome they want.",
-    subhead: "A short supporting line. Say what happens next and how long it takes.",
-    rating: { score: "5.0", count: "00 reviews" },
+    eyebrow: "Your City, OH",
+    headline: "Your car fixed right, explained before we touch it.",
+    subhead:
+      "Straight diagnostics, work you approve first, and a nationwide warranty. Most repairs back the same day.",
+    rating: { score: "4.9", count: "reviews" },
   },
 
-  trustLabel: "Trusted partners",
-  trustLogos: ["Partner One", "Partner Two", "Partner Three"],
+  trustLabel: "Certified by",
+  trustLogos: ["ASE Certified", "NAPA AutoCare", "AAA Approved"],
 
   benefits: {
-    eyebrow: "Why us",
-    title: "Three reasons they should choose this business",
+    eyebrow: "Why this shop",
+    title: "What you get that the dealer will not give you",
     items: [
       {
-        emoji: "⭐",
-        title: "First benefit",
-        body: "One or two sentences in the customer's words, describing what they get.",
+        emoji: "🔧",
+        title: "You approve the work before it starts",
+        body: "We show you what we found, tell you what it costs, and wait. Nothing gets done that you did not say yes to.",
       },
       {
-        emoji: "💬",
-        title: "Second benefit",
-        body: "Keep it concrete. Lead with the outcome, not the process.",
+        emoji: "🛡️",
+        title: "36 months, 36,000 miles, nationwide",
+        body: "Qualifying parts and labor are covered anywhere in the country, not just in our bays.",
       },
       {
-        emoji: "✨",
-        title: "Third benefit",
-        body: "End on the thing that removes the biggest objection.",
+        emoji: "🚗",
+        title: "You still get your day",
+        body: "Loaner cars, a free local shuttle, and an after-hours night drop so the repair does not cost you a day off work.",
       },
     ],
   },
 
   proof: {
-    eyebrow: "Real clients",
+    eyebrow: "Real customers",
     title: "What people say",
     items: [
       {
-        author: "Placeholder — replace with a real review",
-        role: "Client",
-        quote: "A real quote from a real customer. Specific beats glowing.",
+        author: "PLACEHOLDER — paste a real Google review",
+        role: "Customer",
+        quote:
+          "They called before doing anything, showed me the worn pad next to a new one, and the price did not move between the quote and the invoice.",
         rating: 5,
       },
       {
-        author: "Placeholder — replace with a second real review",
-        role: "Client",
-        quote: "A second review, ideally naming a different objection than the first.",
+        author: "PLACEHOLDER — paste a second real Google review",
+        role: "Customer",
+        quote:
+          "Dealer wanted twelve hundred. These guys found it was a sensor, charged me a fraction, and had it back the same afternoon.",
         rating: 5,
       },
     ],
@@ -206,66 +215,83 @@ export const landingSpec: LandingSpec = {
     title: "Frequently asked questions",
     items: [
       {
-        q: "How much does a consultation cost?",
-        a: "Answer the price question first and plainly.",
+        q: "How much will it cost?",
+        a: "You get the number before we start. Diagnostics are quoted up front, and no repair begins without your approval.",
       },
-      { q: "Where are you located?", a: "List the service area or locations." },
-      { q: "How do I book?", a: "Describe the two or three steps after they tap the button." },
-      { q: "Do I have to decide right away?", a: "Remove the commitment objection explicitly." },
-      { q: "Who will I be working with?", a: "Name the credential that builds trust." },
+      {
+        q: "Do you work on my make?",
+        a: "Domestic, import and hybrid. If a job needs a dealer tool we do not have, we will tell you that instead of guessing.",
+      },
+      {
+        q: "How long will it take?",
+        a: "Most common repairs go back the same day. Anything longer, we tell you at drop-off, not when you call to ask.",
+      },
+      {
+        q: "Can I get a ride or a loaner?",
+        a: "Yes. Free local shuttle, courtesy loaners subject to availability, and a night drop if you cannot make our hours.",
+      },
+      {
+        q: "Is the warranty real?",
+        a: "36 months or 36,000 miles on qualifying parts and labor, honored nationwide. Ask for the paperwork before you pay.",
+      },
     ],
   },
 
   finalCta: {
     eyebrow: "Ready when you are",
-    title: "Book your free consultation today",
-    subhead: "It takes about 30 seconds. No obligation.",
+    title: "Get your car booked in.",
+    subhead:
+      "Takes under a minute. Tell us what it is doing and we will tell you what it needs.",
   },
 
   funnel: {
-    panelHeadline: "Book your free consultation in 30 seconds.",
-    panelSubhead: "Answer a few quick questions and we'll match you with the right option.",
-    trust: ["Free consultation", "No obligation", "Takes 30 seconds"],
+    panelHeadline: "Tell us what the car is doing.",
+    panelSubhead: "Three taps and your details. We will call you back to confirm a time.",
+    trust: ["Free estimate", "No work without your approval", "Takes under a minute"],
     steps: [
       {
         kind: "choice",
-        id: "goal",
-        question: "What are you interested in?",
-        help: "Pick the one closest to your goal.",
+        id: "issue",
+        question: "What is going on with the vehicle?",
+        help: "Closest one is fine. We will work the rest out on the phone.",
         options: [
-          { id: "option_one", emoji: "✨", label: "First option", sublabel: "What it is" },
-          { id: "option_two", emoji: "💧", label: "Second option", sublabel: "What it is" },
+          { id: "warning_light", emoji: "⚠️", label: "A warning light is on", sublabel: "Check engine, ABS, TPMS" },
+          { id: "brakes", emoji: "🛑", label: "Brakes", sublabel: "Grinding, squealing, soft pedal" },
+          { id: "noise", emoji: "🔊", label: "A noise or a vibration", sublabel: "Something changed recently" },
+          { id: "wont_start", emoji: "🔋", label: "It will not start", sublabel: "Battery, starter, no crank" },
+          { id: "maintenance", emoji: "🛠️", label: "Routine maintenance", sublabel: "Oil, tires, inspection" },
+          { id: "not_sure", emoji: "🤔", label: "Not sure", sublabel: "Have a look and tell me" },
         ],
       },
       {
         kind: "choice",
         id: "timing",
-        question: "When would you like to start?",
+        question: "When do you need it in?",
         options: [
-          { id: "asap", emoji: "🔥", label: "As soon as possible" },
-          { id: "month", emoji: "📅", label: "Within a month" },
-          { id: "exploring", emoji: "👀", label: "Just exploring" },
+          { id: "today", emoji: "🔥", label: "Today if you can take it" },
+          { id: "this_week", emoji: "📅", label: "This week" },
+          { id: "flexible", emoji: "👍", label: "Whenever suits you" },
         ],
       },
       {
         kind: "contact",
         id: "contact",
-        question: "Where should we send your consultation details?",
-        help: "We'll reach out to book a time that works for you.",
+        question: "Where do we reach you?",
+        help: "We will call to confirm a time. No work happens without your say-so.",
         fields: [
           { id: "name", label: "Full name", placeholder: "Your name" },
-          { id: "phone", label: "Phone", placeholder: "Phone number" },
+          { id: "phone", label: "Mobile", placeholder: "Phone number" },
           { id: "email", label: "Email", placeholder: "you@email.com" },
         ],
-        submitLabel: "Book my free consultation",
+        submitLabel: "Request my appointment",
       },
     ],
-    legal: "You must be 18 or older. A consultation is required; individual results vary.",
+    legal: "By submitting you agree we may contact you about your vehicle. Estimates are provided before any work begins.",
     success: {
-      title: "You're all set! 🎉",
-      body: "Thanks — our team will reach out shortly to book your free consultation.",
-      phone: "(000) 000-0000",
-      phoneHref: "tel:+10000000000",
+      title: "Got it.",
+      body: "We will call shortly to confirm a time. If it is urgent, call the shop and we will get you straight in.",
+      phone: "(216) 555-0148",
+      phoneHref: "tel:+12165550148",
     },
     ui: {
       backLabel: "Back",

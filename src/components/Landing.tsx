@@ -1,30 +1,62 @@
 'use client'
 
 /**
- * Mono — editorial and typographic. Left-aligned, full-bleed, hairline rules,
- * numbered benefits, one pull-quote, persistent bottom CTA bar. The
- * counterweight to Aurora's soft centered cards.
+ * The shop's website.
  *
- * A TEMPLATE: it renders the shared `LandingSpec` and owns nothing else.
+ * Section order is lifted from what already works for independent auto repair,
+ * because the pattern is proven and a shop owner recognises it: phone and star
+ * rating pinned at the top, a photo of the actual building, the amenities that
+ * decide which of three shops gets the call, the warranty, services, reviews,
+ * then the form. What is different here is the execution — one column of real
+ * typography instead of six competing widgets, and every fact read from
+ * `business` so it matches the Google listing exactly.
  *
- * Deliberately not rendered by this template: `benefits.items[].emoji`
- * (numerals replace icons) and `proof.items[].rating` (the pull-quote carries
- * no star row). Both are spec fields Aurora does render — an operator swapping
- * templates will see them disappear. `proof.items[1..]` are also unused; mono
- * shows only the first testimonial by design.
+ * Photographs are load-bearing. A shop that shows its own bay outsells one
+ * running stock images of somebody else's, so unfilled slots render a labelled
+ * placeholder rather than quietly falling back to a stock photo.
  */
 
 import { FunnelOverlay } from '@/components/funnel/FunnelOverlay'
+import { business, dayName, formatTime, fullAddress, phoneHref } from '@/config/business'
 import type { LandingSpec } from '@/config/funnel'
 import { track } from '@/lib/analytics'
 import { haptic } from '@/lib/haptics'
-import { cn } from '@/lib/utils'
-import { ArrowUpRight, Minus, Plus, Star } from 'lucide-react'
+import { image, type SlotId } from '@/lib/images'
+import { localBusinessSchema } from '@/lib/schema'
+import { ArrowUpRight, Clock, MapPin, Phone, ShieldCheck, Star } from 'lucide-react'
 import { useState } from 'react'
+
+/** Renders a slot, placeholder included, at its declared ratio. */
+function Shot({ id, className }: { id: SlotId; className?: string }) {
+  const img = image(id)
+  return (
+    <div
+      className={className}
+      style={{ aspectRatio: String(img.ratio), background: '#EEEDEA', overflow: 'hidden' }}
+    >
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img src={img.src} alt={img.alt} className="h-full w-full object-cover" loading="lazy" />
+    </div>
+  )
+}
+
+function Stars({ value }: { value: number }) {
+  return (
+    <span className="inline-flex items-center gap-0.5" aria-label={`${value} out of 5`}>
+      {[1, 2, 3, 4, 5].map((n) => (
+        <Star
+          key={n}
+          className="h-4 w-4"
+          fill={n <= Math.round(value) ? '#FBBC04' : 'transparent'}
+          stroke="#FBBC04"
+        />
+      ))}
+    </span>
+  )
+}
 
 export function Landing({ spec }: { spec: LandingSpec }) {
   const [open, setOpen] = useState(false)
-  const [faqOpen, setFaqOpen] = useState<number | null>(null)
 
   const openFunnel = () => {
     haptic('light')
@@ -32,190 +64,349 @@ export function Landing({ spec }: { spec: LandingSpec }) {
     setOpen(true)
   }
 
+  const today = new Date().getDay()
+  const todayHours = business.hours.find((h) => h.day === today)
+
   return (
-    <div className="bg-bg text-text pb-24">
-      {/* ── Rule-bound header ── */}
-      <header className="border-b border-border">
-        <div className="mx-auto flex max-w-5xl items-baseline justify-between px-5 py-6">
-          {spec.logo ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={spec.logo.src} alt={spec.logo.alt} className="h-8 w-auto object-contain" />
-          ) : (
-            <span className="font-display text-sm font-bold uppercase tracking-[0.2em]">
-              {spec.brandName}
-            </span>
-          )}
-          <span className="text-xs uppercase tracking-widest text-text-light">
-            {spec.hero.eyebrow}
-          </span>
-        </div>
-      </header>
+    <div className="bg-bg text-text">
+      {/* Machine-readable before it is human-readable: the local pack and every
+          answer engine read this before a word of the page. */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(localBusinessSchema()) }}
+      />
 
-      {/* ── Left-aligned hero ── */}
-      <section className="mx-auto max-w-5xl px-5 pb-20 pt-16 sm:pt-24">
-        {spec.hero.rating && (
-          <p className="mb-8 flex items-center gap-2 text-sm text-text-muted">
-            <Star className="h-4 w-4 fill-text text-text" />
-            <span className="font-semibold text-text">{spec.hero.rating.score}</span>
-            <span>{spec.reviewConnector} {spec.hero.rating.count}</span>
-          </p>
-        )}
-        <h1 className="max-w-3xl font-display text-[2.75rem] font-black leading-[0.98] tracking-tight sm:text-6xl md:text-7xl">
-          {spec.hero.headline}
-        </h1>
-        {spec.hero.subhead && (
-          <p className="mt-8 max-w-xl border-l-2 border-primary-500 pl-5 text-lg leading-relaxed text-text-muted">
-            {spec.hero.subhead}
-          </p>
-        )}
-        <button
-          onClick={openFunnel}
-          className="group mt-10 inline-flex items-center gap-3 border-b-2 border-text pb-1 font-display text-lg font-bold tracking-tight transition-colors hover:border-primary-500 hover:text-primary-500"
-        >
-          {spec.ctaLabel}
-          <ArrowUpRight className="h-5 w-5 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
-        </button>
-      </section>
-
-      {/* ── Trust strip ── */}
-      <section className="border-y border-border bg-surface">
-        <div className="mx-auto flex max-w-5xl flex-wrap items-center gap-x-8 gap-y-3 px-5 py-6">
-          <span className="text-xs uppercase tracking-widest text-text-light">
-            {spec.trustLabel}
-          </span>
-          {spec.trustLogos.map((logo) => (
-            <span
-              key={logo}
-              className="font-display text-sm font-bold tracking-tight text-text-muted"
+      {/* ── Utility bar: rating, phone, book. Never scrolls away on desktop. ── */}
+      <div className="border-b border-border bg-text text-bg">
+        <div className="mx-auto flex max-w-6xl flex-wrap items-center gap-x-6 gap-y-2 px-5 py-2.5 text-sm">
+          {business.rating && business.rating.count > 0 ? (
+            <a
+              href={business.mapsUrl || '#reviews'}
+              className="flex items-center gap-2 opacity-90 hover:opacity-100"
             >
-              {logo}
-            </span>
-          ))}
-        </div>
-      </section>
-
-      {/* ── Numbered benefits ── */}
-      <section className="mx-auto max-w-5xl px-5 py-20">
-        <p className="mb-2 text-xs uppercase tracking-widest text-primary-600">
-          {spec.benefits.eyebrow}
-        </p>
-        <h2 className="mb-12 max-w-2xl font-display text-3xl font-black tracking-tight sm:text-4xl">
-          {spec.benefits.title}
-        </h2>
-        <ol className="border-t border-border">
-          {spec.benefits.items.map((b, i) => (
-            <li
-              key={b.title}
-              className="grid gap-2 border-b border-border py-8 sm:grid-cols-[4rem_1fr_2fr] sm:gap-8"
-            >
-              <span className="font-display text-2xl font-black text-primary-500">
-                {String(i + 1).padStart(2, '0')}
+              <Stars value={business.rating.value} />
+              <span className="font-semibold">{business.rating.value.toFixed(1)}</span>
+              <span className="underline underline-offset-2">
+                {business.rating.count} Google reviews
               </span>
-              <h3 className="font-display text-xl font-bold">{b.title}</h3>
-              <p className="leading-relaxed text-text-muted">{b.body}</p>
-            </li>
-          ))}
-        </ol>
-      </section>
-
-      {/* ── Single pull-quote ── */}
-      {spec.proof.items[0] && (
-        <section className="bg-surface">
-          <div className="mx-auto max-w-4xl px-5 py-20">
-            <p className="mb-2 text-xs uppercase tracking-widest text-primary-600">
-              {spec.proof.eyebrow}
-            </p>
-            <h2 className="mb-8 max-w-2xl font-display text-3xl font-black tracking-tight">
-              {spec.proof.title}
-            </h2>
-            <blockquote className="font-display text-2xl font-bold leading-snug tracking-tight sm:text-3xl">
-              “{spec.proof.items[0].quote}”
-            </blockquote>
-            <p className="mt-6 text-sm text-text-muted">
-              {spec.proof.items[0].author} — {spec.proof.items[0].role}
-            </p>
-          </div>
-        </section>
-      )}
-
-      {/* ── FAQ as a rule-separated list ── */}
-      <section className="mx-auto max-w-3xl px-5 py-20">
-        <p className="mb-2 text-xs uppercase tracking-widest text-primary-600">
-          {spec.faq.eyebrow}
-        </p>
-        <h2 className="mb-10 font-display text-3xl font-black tracking-tight">{spec.faq.title}</h2>
-        <div className="border-t border-border">
-          {spec.faq.items.map((f, i) => {
-            const isOpen = faqOpen === i
-            return (
-              <div key={f.q} className="border-b border-border">
-                <button
-                  onClick={() => setFaqOpen(isOpen ? null : i)}
-                  aria-expanded={isOpen}
-                  className="flex w-full items-center justify-between gap-4 py-5 text-left font-display font-bold"
-                >
-                  {f.q}
-                  {isOpen ? (
-                    <Minus className="h-4 w-4 flex-shrink-0 text-primary-500" />
-                  ) : (
-                    <Plus className="h-4 w-4 flex-shrink-0 text-text-light" />
-                  )}
-                </button>
-                {isOpen && <p className="pb-5 leading-relaxed text-text-muted">{f.a}</p>}
-              </div>
-            )
-          })}
-        </div>
-      </section>
-
-      {/* ── Final CTA, flat and full-bleed ── */}
-      <section className="border-t border-border bg-primary-500 text-white">
-        <div className="mx-auto max-w-5xl px-5 py-20">
-          <p className="mb-2 text-xs uppercase tracking-widest text-white/70">
-            {spec.finalCta.eyebrow}
-          </p>
-          <h2 className="max-w-2xl font-display text-3xl font-black tracking-tight sm:text-5xl">
-            {spec.finalCta.title}
-          </h2>
-          {spec.finalCta.subhead && (
-            <p className="mt-4 max-w-lg text-lg text-white/85">{spec.finalCta.subhead}</p>
+            </a>
+          ) : (
+            <span className="opacity-70">{business.category}</span>
           )}
-          <button
-            onClick={openFunnel}
-            className="mt-8 inline-flex items-center gap-3 bg-white px-7 py-4 font-display font-bold tracking-tight text-primary-600 transition-transform active:scale-[0.99]"
-          >
-            {spec.ctaLabel}
-            <ArrowUpRight className="h-5 w-5" />
-          </button>
-        </div>
-      </section>
 
-      <footer className="mx-auto max-w-5xl px-5 py-10 text-xs uppercase tracking-widest text-text-light">
-        © {new Date().getFullYear()} {spec.brandName} · {spec.footerSuffix}
-      </footer>
-
-      {/* ── Persistent bottom CTA bar ── */}
-      <div
-        className={cn(
-          'fixed inset-x-0 bottom-0 z-40 border-t border-border bg-surface/95 backdrop-blur',
-          open && 'hidden'
-        )}
-      >
-        <div className="mx-auto flex max-w-5xl items-center justify-between gap-4 px-5 py-3">
-          <span className="hidden text-sm text-text-muted sm:block">{spec.finalCta.title}</span>
+          <a href={phoneHref()} className="ml-auto flex items-center gap-2 font-semibold">
+            <Phone className="h-4 w-4" />
+            {business.phone}
+          </a>
           <button
+            type="button"
             onClick={openFunnel}
-            className="flex-1 bg-text px-6 py-3 font-display text-sm font-bold tracking-tight text-bg transition-opacity hover:opacity-90 sm:flex-none"
+            className="rounded-full bg-primary px-4 py-1.5 text-sm font-semibold text-white"
           >
             {spec.ctaLabel}
           </button>
         </div>
       </div>
 
+      {/* ── Header ── */}
+      <header className="border-b border-border">
+        <div className="mx-auto flex max-w-6xl items-center justify-between gap-6 px-5 py-5">
+          {spec.logo ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={spec.logo.src} alt={spec.logo.alt} className="h-9 w-auto object-contain" />
+          ) : (
+            <span className="font-display text-base font-bold uppercase tracking-[0.18em]">
+              {business.name}
+            </span>
+          )}
+          <span className="hidden text-sm text-text-light sm:block">
+            {business.address.city}, {business.address.state}
+          </span>
+        </div>
+      </header>
+
+      {/* ── Hero: the building, not a stock garage ── */}
+      <section className="relative">
+        <Shot id="hero" className="w-full" />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/35 to-transparent" />
+        <div className="absolute inset-x-0 bottom-0">
+          <div className="mx-auto max-w-6xl px-5 pb-8 sm:pb-12">
+            <h1 className="max-w-[18ch] text-balance font-display text-4xl font-bold leading-[1.05] text-white sm:text-6xl">
+              {spec.hero.headline}
+            </h1>
+            <p className="mt-4 max-w-[46ch] text-base text-white/85 sm:text-lg">
+              {spec.hero.subhead}
+            </p>
+            <div className="mt-6 flex flex-wrap items-center gap-3">
+              <button
+                type="button"
+                onClick={openFunnel}
+                className="inline-flex items-center gap-2 rounded-full bg-primary px-6 py-3.5 text-base font-semibold text-white"
+              >
+                {spec.ctaLabel}
+                <ArrowUpRight className="h-4 w-4" />
+              </button>
+              <a
+                href={phoneHref()}
+                className="inline-flex items-center gap-2 rounded-full border border-white/40 px-6 py-3.5 text-base font-semibold text-white"
+              >
+                <Phone className="h-4 w-4" />
+                Call {business.phone}
+              </a>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ── Amenities + warranty: what actually decides the call ── */}
+      <section className="border-b border-border bg-surface">
+        <div className="mx-auto grid max-w-6xl gap-8 px-5 py-10 sm:grid-cols-2 lg:grid-cols-4">
+          {business.warranty ? (
+            <div className="flex items-start gap-3">
+              <ShieldCheck className="mt-0.5 h-6 w-6 shrink-0 text-primary" />
+              <div>
+                <p className="font-semibold">
+                  {business.warranty.months} months / {business.warranty.miles.toLocaleString()} miles
+                </p>
+                <p className="text-sm text-text-light">Nationwide warranty on qualifying work</p>
+              </div>
+            </div>
+          ) : null}
+          {business.amenities.slice(0, 3).map((a) => (
+            <div key={a} className="flex items-start gap-3">
+              <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-primary" />
+              <p className="font-medium">{a}</p>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* ── Welcome ── */}
+      <section className="mx-auto grid max-w-6xl gap-10 px-5 py-16 lg:grid-cols-2 lg:items-center lg:gap-16">
+        <Shot id="exterior" className="rounded-2xl" />
+        <div>
+          <p className="text-xs uppercase tracking-[0.2em] text-text-light">
+            {business.address.city}, {business.address.state}
+          </p>
+          <h2 className="mt-3 font-display text-3xl font-bold leading-tight sm:text-4xl">
+            Welcome to {business.name}
+          </h2>
+          <p className="mt-5 text-base leading-relaxed text-text-muted">{business.description}</p>
+          {business.yearEstablished ? (
+            <p className="mt-4 font-semibold">
+              Serving {business.address.city} since {business.yearEstablished}.
+            </p>
+          ) : null}
+          <button
+            type="button"
+            onClick={openFunnel}
+            className="mt-7 inline-flex items-center gap-2 rounded-full bg-primary px-6 py-3.5 font-semibold text-white"
+          >
+            {spec.ctaLabel}
+            <ArrowUpRight className="h-4 w-4" />
+          </button>
+        </div>
+      </section>
+
+      {/* ── Services ── */}
+      <section className="border-y border-border bg-surface">
+        <div className="mx-auto max-w-6xl px-5 py-16">
+          <h2 className="font-display text-3xl font-bold sm:text-4xl">What we fix</h2>
+          <div className="mt-8 grid gap-x-8 gap-y-4 sm:grid-cols-2 lg:grid-cols-3">
+            {business.services.map((s, i) => (
+              <div key={s} className="flex items-baseline gap-4 border-b border-border py-3">
+                <span className="font-mono text-xs text-text-light">
+                  {String(i + 1).padStart(2, '0')}
+                </span>
+                <span className="font-medium">{s}</span>
+              </div>
+            ))}
+          </div>
+          <div className="mt-10 grid gap-4 sm:grid-cols-3">
+            <Shot id="bay" className="rounded-xl" />
+            <Shot id="interior" className="rounded-xl" />
+            <Shot id="detail" className="rounded-xl" />
+          </div>
+        </div>
+      </section>
+
+      {/* ── Reviews ── */}
+      <section id="reviews" className="mx-auto max-w-6xl px-5 py-16">
+        <div className="flex flex-wrap items-end justify-between gap-4">
+          <h2 className="font-display text-3xl font-bold sm:text-4xl">What customers say</h2>
+          {business.reviewUrl ? (
+            <a
+              href={business.reviewUrl}
+              target="_blank"
+              rel="noreferrer"
+              className="text-sm font-semibold underline underline-offset-4"
+            >
+              Leave a review
+            </a>
+          ) : null}
+        </div>
+
+        {business.rating && business.rating.count > 0 ? (
+          <p className="mt-3 flex items-center gap-2 text-text-muted">
+            <Stars value={business.rating.value} />
+            <span className="font-semibold text-text">{business.rating.value.toFixed(1)}</span>
+            <span>from {business.rating.count} Google reviews</span>
+          </p>
+        ) : null}
+
+        <div className="mt-8 grid gap-6 md:grid-cols-2">
+          {spec.proof.items.slice(0, 2).map((t) => (
+            <figure key={t.author} className="rounded-2xl border border-border p-6">
+              <Stars value={5} />
+              <blockquote className="mt-3 text-base leading-relaxed">{t.quote}</blockquote>
+              <figcaption className="mt-4 text-sm font-semibold text-text-light">
+                {t.author}
+              </figcaption>
+            </figure>
+          ))}
+        </div>
+      </section>
+
+      {/* ── Team ── */}
+      <section className="border-y border-border bg-surface">
+        <div className="mx-auto grid max-w-6xl gap-10 px-5 py-16 lg:grid-cols-2 lg:items-center lg:gap-16">
+          <div>
+            <h2 className="font-display text-3xl font-bold sm:text-4xl">The people doing the work</h2>
+            <p className="mt-5 text-base leading-relaxed text-text-muted">
+              Every job is explained before it starts, and nothing gets done that does not need
+              doing.
+            </p>
+            {business.certifications.length ? (
+              <ul className="mt-6 flex flex-wrap gap-2">
+                {business.certifications.map((c) => (
+                  <li
+                    key={c}
+                    className="rounded-full border border-border px-4 py-1.5 text-sm font-medium"
+                  >
+                    {c}
+                  </li>
+                ))}
+              </ul>
+            ) : null}
+          </div>
+          <Shot id="team" className="rounded-2xl" />
+        </div>
+      </section>
+
+      {/* ── Book ── */}
+      <section className="mx-auto max-w-6xl px-5 py-16 text-center">
+        <h2 className="font-display text-3xl font-bold sm:text-5xl">{spec.finalCta.title}</h2>
+        <p className="mx-auto mt-4 max-w-[46ch] text-text-muted">{spec.finalCta.subhead}</p>
+        <button
+          type="button"
+          onClick={openFunnel}
+          className="mt-8 inline-flex items-center gap-2 rounded-full bg-primary px-8 py-4 text-lg font-semibold text-white"
+        >
+          {spec.ctaLabel}
+          <ArrowUpRight className="h-5 w-5" />
+        </button>
+      </section>
+
+      {/* ── Footer: the facts, matching the Google listing exactly ── */}
+      <footer className="border-t border-border bg-text text-bg">
+        <div className="mx-auto grid max-w-6xl gap-10 px-5 py-14 sm:grid-cols-2 lg:grid-cols-3">
+          <div>
+            <p className="font-display text-lg font-bold">{business.name}</p>
+            <a
+              href={business.mapsUrl || undefined}
+              target="_blank"
+              rel="noreferrer"
+              className="mt-4 flex items-start gap-2 text-sm opacity-80 hover:opacity-100"
+            >
+              <MapPin className="mt-0.5 h-4 w-4 shrink-0" />
+              {fullAddress()}
+            </a>
+            <a href={phoneHref()} className="mt-3 flex items-center gap-2 text-sm opacity-80">
+              <Phone className="h-4 w-4" />
+              {business.phone}
+            </a>
+          </div>
+
+          <div>
+            <p className="flex items-center gap-2 text-sm font-semibold">
+              <Clock className="h-4 w-4" />
+              Hours
+              {todayHours && !todayHours.closed ? (
+                <span className="ml-1 rounded-full bg-white/15 px-2 py-0.5 text-xs">
+                  Open today until {formatTime(todayHours.close)}
+                </span>
+              ) : null}
+            </p>
+            <dl className="mt-4 space-y-1.5 text-sm opacity-80">
+              {business.hours.map((h) => (
+                <div key={h.day} className="flex justify-between gap-6">
+                  <dt className={h.day === today ? 'font-semibold opacity-100' : ''}>
+                    {dayName(h.day)}
+                  </dt>
+                  <dd className="tabular-nums">
+                    {h.closed ? 'Closed' : `${formatTime(h.open)} – ${formatTime(h.close)}`}
+                  </dd>
+                </div>
+              ))}
+            </dl>
+          </div>
+
+          <div className="flex flex-col items-start gap-3">
+            {business.mapsUrl ? (
+              <a
+                href={business.mapsUrl}
+                target="_blank"
+                rel="noreferrer"
+                className="rounded-full border border-white/30 px-5 py-2.5 text-sm font-semibold"
+              >
+                Get directions
+              </a>
+            ) : null}
+            {business.reviewUrl ? (
+              <a
+                href={business.reviewUrl}
+                target="_blank"
+                rel="noreferrer"
+                className="rounded-full border border-white/30 px-5 py-2.5 text-sm font-semibold"
+              >
+                Leave a Google review
+              </a>
+            ) : null}
+            {business.serviceAreas.length ? (
+              <p className="mt-2 text-xs leading-relaxed opacity-60">
+                Also serving {business.serviceAreas.join(', ')}
+              </p>
+            ) : null}
+          </div>
+        </div>
+        <div className="border-t border-white/10 py-5 text-center text-xs opacity-60">
+          © {new Date().getFullYear()} {business.name}. {spec.footerSuffix}
+        </div>
+      </footer>
+
+      {/* ── Sticky call/book bar. A shop owner's customer is on a phone. ── */}
+      <div className="fixed inset-x-0 bottom-0 z-40 flex gap-2 border-t border-border bg-bg p-3 sm:hidden">
+        <a
+          href={phoneHref()}
+          className="flex flex-1 items-center justify-center gap-2 rounded-full border border-border py-3 font-semibold"
+        >
+          <Phone className="h-4 w-4" />
+          Call
+        </a>
+        <button
+          type="button"
+          onClick={openFunnel}
+          className="flex-1 rounded-full bg-primary py-3 font-semibold text-white"
+        >
+          {spec.ctaLabel}
+        </button>
+      </div>
+      <div className="h-16 sm:hidden" />
+
       {open && (
         <FunnelOverlay
           flow={spec.funnel}
-          brandName={spec.brandName}
+          brandName={business.name}
           onClose={() => setOpen(false)}
         />
       )}
