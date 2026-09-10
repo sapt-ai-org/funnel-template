@@ -10,26 +10,26 @@
 @theme {
   /* ═══ PRIMARY BRAND COLORS ═══
      Main brand color used for buttons, links, and key UI elements */
-  --color-primary-50: #F6F1F7;
-  --color-primary-100: #ECE4F0;
-  --color-primary-200: #D9CCE6;
-  --color-primary-300: #BFAED6;
-  --color-primary-400: #A99FCE;
-  --color-primary-500: #948CC1;     /* ← Main brand color (per-client; pulled from Sapt branding) */
-  --color-primary-600: #7D74B0;
-  --color-primary-700: #6A629B;
-  --color-primary-800: #554E7C;
-  --color-primary-900: #423C61;
+  --color-primary-50: #FBECEE;
+  --color-primary-100: #F5D4D9;
+  --color-primary-200: #ECAEB8;
+  --color-primary-300: #E17C8C;
+  --color-primary-400: #D34058;
+  --color-primary-500: #C8102E;     /* ← Main brand color (per-client; pulled from Sapt branding) */
+  --color-primary-600: #AC0E28;
+  --color-primary-700: #900C21;
+  --color-primary-800: #74091B;
+  --color-primary-900: #580714;
 
   /* ═══ ACCENT COLORS ═══
      Secondary color for highlights, badges, and warm CTAs */
-  --color-accent-50: #FCF4F7;
-  --color-accent-100: #F7E7EE;
-  --color-accent-200: #EFCFDD;
-  --color-accent-300: #E3AEC6;
-  --color-accent-400: #D69FB7;
-  --color-accent-500: #C890AC;      /* ← Main accent color */
-  --color-accent-600: #B0789A;
+  --color-accent-50: #EDF1FC;
+  --color-accent-100: #D6DFF8;
+  --color-accent-200: #B2C3F2;
+  --color-accent-300: #839EEA;
+  --color-accent-400: #4A71E0;
+  --color-accent-500: #1D4ED8;      /* ← Main accent color */
+  --color-accent-600: #1943BA;
 
   /* ═══ NEUTRAL COLORS (themeable — values live in :root below) ═══ */
   --color-bg: var(--bg);

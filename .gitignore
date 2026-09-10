@@ -9,7 +9,6 @@ out
 # OpenNext / Cloudflare
 .open-next
 .wrangler
-test
 # Build
 dist
 build

@@ -79,12 +79,11 @@ export interface Testimonial { author: string; role: string; quote: string; rati
 export interface Faq { q: string; a: string }
 
 export interface LandingSpec {
-  template: 'aurora' | 'mono'
   brandName: string
   /**
    * Client logo, stamped in at provisioning time from the project's branding.
-   * `null` in the template itself — every template must fall back to rendering
-   * `brandName` as text when this is null.
+   * `null` in the template itself, so the layout must always fall back to
+   * rendering `brandName` as text.
    */
   logo: { src: string; alt: string } | null
   /** Primary CTA label reused across the page — say exactly what happens. */
@@ -132,12 +131,11 @@ export interface LandingSpec {
    ════════════════════════════════════════════════════════════════════════════ */
 
 export const landingSpec: LandingSpec = {
-  template: "mono",
   brandName: "Demo Auto Repair",
   logo: null,
   ctaLabel: "Book an appointment",
   seo: {
-    title: "Demo Auto Repair — Honest auto repair in Your City, OH",
+    title: "Demo Auto Repair | Honest auto repair in Your City, OH",
     description:
       "Independent auto repair. Brakes, check engine diagnostics, tires and more. Nationwide 36 month / 36,000 mile warranty. Book online in under a minute.",
   },
@@ -194,14 +192,14 @@ export const landingSpec: LandingSpec = {
     title: "What people say",
     items: [
       {
-        author: "PLACEHOLDER — paste a real Google review",
+        author: "PLACEHOLDER: paste a real Google review",
         role: "Customer",
         quote:
           "They called before doing anything, showed me the worn pad next to a new one, and the price did not move between the quote and the invoice.",
         rating: 5,
       },
       {
-        author: "PLACEHOLDER — paste a second real Google review",
+        author: "PLACEHOLDER: paste a second real Google review",
         role: "Customer",
         quote:
           "Dealer wanted twelve hundred. These guys found it was a sensor, charged me a fraction, and had it back the same afternoon.",
@@ -306,25 +304,27 @@ export const landingSpec: LandingSpec = {
 }
 
 /* ════════════════════════════════════════════════════════════════════════════
-   COMPLIANCE — Meta Health & Wellness (read before editing copy)
+   COMPLIANCE, local service ads. Read before editing copy.
    ────────────────────────────────────────────────────────────────────────────
-   Cosmetic / med-spa / stem-cell / weight / supplement funnels MUST:
-     • target 18+  (set on the ad set AND stated in `funnel.legal`)
-     • use positive framing — never attack someone's appearance
-     • never promise guaranteed outcomes or timeframes without "results vary"
-     • (stem-cell/regenerative) NEVER claim to treat/cure a disease — consult only
-   NEVER use these words in any funnel or ad copy:
+   A shop's ads get pulled for the same short list of things every time:
+     • a superlative nobody can substantiate, "cheapest in town"
+     • a bare guarantee. The warranty is a real, checkable claim, so state its
+       months and miles instead of promising an outcome.
+     • a price or discount with no terms and no end date
+     • the word free attached to something that is not actually free
+     • manufactured urgency: countdowns, "today only", invented scarcity
+   The specific true thing converts better than the superlative and it survives
+   review. NEVER use these words in any funnel or ad copy:
    ════════════════════════════════════════════════════════════════════════════ */
 
 export const BANNED_WORDS = [
   'guaranteed',
-  'permanent',
-  'cure',
-  'reverse',
+  'cheapest',
+  'lowest price',
+  'best in town',
+  'no risk',
   'miracle',
   'instant',
-  'eliminate',
-  'heal',
 ] as const
 
 /** Returns any banned words found in `text` (case-insensitive). Empty = clean. */

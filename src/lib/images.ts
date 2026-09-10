@@ -13,7 +13,9 @@
  *
  * `pnpm pull-gbp` fills what it can from the Google Business Profile: Google
  * already holds the owner's exterior, interior and team shots, and those are
- * the same photos customers see on Maps, so the site matches the listing.
+ * the same photos customers see on Maps, so the site matches the listing. It
+ * downloads them into `public/photos/` and rewrites everything between the
+ * `pull-gbp:begin slots` and `pull-gbp:end slots` markers below.
  */
 
 export type SlotId =
@@ -41,6 +43,7 @@ export interface ImageSlot {
   alt?: string
 }
 
+// pull-gbp:begin slots
 export const SLOTS: Record<SlotId, ImageSlot> = {
   hero: { id: 'hero', brief: 'Wide shot of the shop front, daylight, sign visible', ratio: 16 / 9 },
   exterior: { id: 'exterior', brief: 'Building exterior from the street', ratio: 4 / 3 },
@@ -54,6 +57,7 @@ export const SLOTS: Record<SlotId, ImageSlot> = {
   gallery3: { id: 'gallery3', brief: 'Gallery: a finished job', ratio: 1 },
   gallery4: { id: 'gallery4', brief: 'Gallery: the sign or street view', ratio: 1 },
 }
+// pull-gbp:end slots
 
 /**
  * An inline SVG placeholder carrying its own brief.

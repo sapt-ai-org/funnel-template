@@ -5,10 +5,11 @@
  * review link, the JSON-LD, the sitemap, llms.txt. One fact lives in one place,
  * so a client who changes their phone number changes it once.
  *
- * MOST OF THIS IS GENERATED. `pnpm pull-gbp` overwrites the fields marked
- * `@gbp` from the client's Google Business Profile. Hand-editing those is
- * fine for a one-off but the next pull wins, so put durable edits in the
- * fields marked `@manual`.
+ * MOST OF THIS IS GENERATED. `pnpm pull-gbp` rewrites everything between the
+ * `pull-gbp:begin business` and `pull-gbp:end business` markers below, taking
+ * the fields marked `@gbp` from the client's Google Business Profile and
+ * carrying the fields marked `@manual` through untouched. Hand-editing a
+ * `@gbp` field is fine for a one-off but the next pull wins.
  *
  * The placeholder values below are deliberately obvious. A site that ships
  * with "Placeholder Co" on it is embarrassing; a site that ships with a
@@ -76,6 +77,7 @@ export interface BusinessProfile {
 
 const PLACEHOLDER = 'REPLACE ME'
 
+// pull-gbp:begin business
 export const business: BusinessProfile = {
   name: 'Demo Auto Repair',
   category: 'Auto repair shop',
@@ -129,6 +131,7 @@ export const business: BusinessProfile = {
   specials: [],
   serviceAreas: [],
 }
+// pull-gbp:end business
 
 /** True when the profile still carries shipped-from-the-template values. */
 export function isPlaceholder(): boolean {

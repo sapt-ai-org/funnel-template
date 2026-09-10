@@ -1,222 +1,189 @@
-# Client Onboarding — Stand up a high-converting funnel in ~20 minutes
+# Client onboarding
 
-This template is a **perspective.co-style lead funnel**: one question per screen, big
-tappable buttons, minimal words. The entire funnel is one file — `src/config/funnel.ts`.
-Sapt stays connected for leads, analytics, and optional published CMS sections, while the
-deployed site's source of truth remains code.
+Stand up a shop's site in about twenty minutes.
 
-**The whole job, start to finish:**
+Most of the work is already done by the time you start, because the shop already
+wrote its own facts on Google. This is a site for an independent auto repair
+shop: one page that answers who they are, what they fix, when they are open and
+how to book, plus a booking funnel and a review flow.
 
-- [ ] 1. Grab the business's assets (logo, colors, fonts) → `public/`
-- [ ] 2. Write the offer(s) — one sentence, clear CTA, low risk, compliant
-- [ ] 3. Seed the client's Sapt memory (`brand`, `icp`, `offer`)
-- [ ] 4. Configure the funnel — edit `src/config/funnel.ts`
-- [ ] 5. Brand the look — colors + fonts
-- [ ] 6. Connect Sapt — one env var + one MCP call to create the lead type
-- [ ] 7. Preview and hand off
+**The whole job:**
 
-> Each step below is designed to be a single Claude prompt or a single file edit.
-> The fastest path is to let Claude (with the Sapt MCP connected) do 1, 2, 3, and 6.
+- [ ] 1. Connect the shop's Google Business Profile in Sapt
+- [ ] 2. Run `pnpm pull-gbp`
+- [ ] 3. Answer the handful of things Google does not know
+- [ ] 4. Fill the photo slots
+- [ ] 5. Set the voice and the offer in `src/config/funnel.ts`
+- [ ] 6. Decide the review routing
+- [ ] 7. Check it and hand it off
 
----
+Three files hold everything a visitor sees:
 
-## 1. Get the business's assets
-
-**Goal:** logo, color palette, and fonts, pulled straight from their existing site.
-
-**Fastest way — ask Claude:**
-
-> "Scrape `https://THEIR-SITE.com` and build a brand kit: download the logo, favicon,
-> and hero images; extract the color palette (ignore framework defaults like Bootstrap);
-> pull the fonts from `@font-face`. Put everything in a `brand/` folder with a `BRAND.md`
-> summary (colors as hex with roles, font names, logo notes)."
-
-What you're collecting:
-
-| Asset | Where it goes | Notes |
-|---|---|---|
-| Logo (SVG or PNG) | `public/logo.svg` | If the logo is a PNG wrapped in an SVG, extract the PNG. |
-| Favicon | `public/favicon.ico` / `public/icon.png` | |
-| Brand colors | Step 5 (`src/config/funnel.ts`) + Sapt branding | Grab primary + accent + neutrals. |
-| Fonts | Step 5 | Note the display + body families. |
-| Hero image (optional) | `public/` | Only if you use imagery in the funnel. |
-
-**Extraction tips** (how Claude does it): fetch the homepage HTML and the theme CSS,
-count hex colors by frequency and drop the framework defaults (Bootstrap blues, greys),
-read `@font-face` for the real font files, and take the header logo. Keep the
-highest-signal 4–6 colors.
-
----
-
-## 2. Build strong offers
-
-A good offer is **one striking sentence + a clear CTA + low risk**. For most local
-service businesses the strongest low-risk CTA is a **free consultation** (no price
-anchoring, no commitment).
-
-**The formula:**
-
-```
-[Positive outcome in the customer's words] + [what it is] — [clear CTA], [risk reversal].
-```
-
-**Examples (an independent med spa):**
-
-- *"Rediscover thicker, fuller-looking hair using your body's own platelet-rich plasma —
-  book a free, no-obligation consultation."*
-- *"Reveal smoother, more radiant skin with a gentle Moxi laser treatment — claim your
-  complimentary skin consultation."*
-
-**⚠️ Compliance (health / med-spa / cosmetic / weight / supplements).** Meta will reject
-non-compliant ads and can restrict the account. Every funnel MUST:
-
-- Target **18+** (set on the ad set **and** state it in the funnel's `legal` line).
-- Use **positive framing** — never attack someone's appearance.
-- Never promise guaranteed outcomes or timeframes without an "individual results vary" qualifier.
-- **Never** use these words anywhere in the funnel or ads:
-  `guaranteed`, `permanent`, `cure`, `reverse`, `miracle`, `instant`, `eliminate`.
-
-> The funnel has an automatic guard: `pnpm test` fails if any banned word appears in the
-> active funnel copy (see `src/config/funnel.test.ts`). Write freely, then run the test.
-
----
-
-## 3. Add the client to Sapt memory
-
-Seed three memory entries so every downstream tool (ads, content, this funnel) shares the
-same brief. **Ask Claude (Sapt MCP connected, correct project active):**
-
-> "In the Sapt project for THIS CLIENT, save these memories, scoped only to what we're
-> advertising: `brand` (business, locations, voice, visual identity, compliance guardrails),
-> `icp` (who we target — geo, age 18+, motivations, objections), and `offer` (the offers
-> from step 2 with CTAs and the mandatory Meta setup)."
-
-Reserved keys Sapt treats as project foundation:
-
-| Key | What to write |
+| File | What it owns |
 |---|---|
-| `brand` | Name, locations, contact, voice/tone, colors + fonts, compliance guardrails. |
-| `icp` | Geo radius, age (18+), the 1–2 target segments, their motivations + objections. |
-| `offer` | The offers from step 2 — one sentence each, CTA, risk reversal, Meta setup rules. |
+| `src/config/business.ts` | The facts. Name, address, phone, hours, services, rating, review link, warranty, amenities, service areas. |
+| `src/config/funnel.ts` | The voice. Headlines, benefits, reviews, FAQ, the funnel's questions, every label. |
+| `src/lib/images.ts` | The photographs. One named slot per position, each with a written brief. |
 
-Keep every entry **scoped to the services you're running ads on**. Anything outside that is
-wasted space.
+Nothing else needs editing to stand up a client.
 
 ---
 
-## 4. Configure the funnel
+## 1. Connect the Google Business Profile
 
-Open **`src/config/funnel.ts`** — this is the only file you edit to change the live site. It
-contains one `landingSpec` object:
+In Sapt, open the client's project, go to **Integrations**, and connect **Google
+Business Profile**. Then sync locations. The shop's owner has to authorize it,
+which is usually the longest part of the whole job, so start here.
+
+This is worth doing even if you were going to type the address by hand. It is
+what makes the site and the Maps listing agree, and it is the difference
+between one review link that works and a hand-built one that does not.
+
+---
+
+## 2. Pull the business
+
+```bash
+cp .env.local.example .env.local
+# NEXT_PUBLIC_SAPT_PROJECT_ID=<the client's Sapt project UUID>
+# SAPT_API_KEY=<a server-side Sapt API key>
+pnpm pull-gbp --dry-run   # see what it would write
+pnpm pull-gbp             # write it
+```
+
+It fills every field marked `@gbp` in `business.ts`: name, category,
+description, phone, address, hours, services, rating and review count, the
+Google review link, the Maps link, the Place ID. It downloads the profile's
+photos into `public/photos/` and assigns them to image slots.
+
+Fields marked `@manual` are read back out of the file and written through
+unchanged, so you can run it again after a shop updates its hours without
+losing anything you typed.
+
+It refuses to write inside the public template repository, because a real Place
+ID or review link committed there would be a client identifier in a public repo.
+Run it in the client's own repository.
+
+---
+
+## 3. Answer what Google does not know
+
+Open `business.ts` and fill the `@manual` fields. Ask the owner:
+
+| Field | Ask |
+|---|---|
+| `email` | Which inbox should leads reach? |
+| `siteUrl` | What domain is this going live on? |
+| `yearEstablished` | What year did the shop open? "Family owned since 1979" outperforms any adjective. |
+| `warranty` | Months and miles. This is the one claim a customer cannot get from the dealer for less. |
+| `amenities` | Loaner, shuttle, night drop, wifi. These decide which of three shops gets the call. |
+| `certifications` | ASE, NAPA AutoCare, AAA, BBB. Third-party trust, not our words. |
+| `specials` | Any live coupon, with its terms. Leave the array empty rather than inventing one. |
+| `serviceAreas` | The surrounding towns they actually serve. This is how a shop shows up for a neighbouring town it has no address in. |
+
+Leave a field alone rather than guessing. An empty `specials` array renders no
+offer block at all, which is correct. An invented discount is a problem the shop
+finds out about from a customer.
+
+---
+
+## 4. Fill the photo slots
+
+A local service site lives or dies on photographs. Stock photography of a
+generic garage reads as a template instantly, and every competitor's template
+uses the same three shots.
+
+`pull-gbp` fills what the Google profile has. Whatever is left renders a hatched
+placeholder carrying its own brief, so the page still lays out correctly and it
+is obvious to everyone, the client included, exactly which photo is missing.
+
+Run `pnpm pull-gbp` and read the last line: it names every slot still waiting.
+Send that list to the owner. Drop the files in `public/photos/` and set `src`
+and `alt` on the slot in `src/lib/images.ts`.
+
+The `owner` slot is never filled automatically. Google has no category for "the
+owner, head and shoulders", and guessing wrong puts a stranger's face on the
+about section.
+
+---
+
+## 5. Set the voice and the offer
+
+`src/config/funnel.ts` is the voice: hero, benefits, proof, FAQ, final CTA, and
+the booking funnel itself. The facts already came from Google, so this file is
+where the shop sounds like itself.
+
+The funnel asks what is wrong with the vehicle, when they need it, and then who
+they are. Three screens, then the ask.
+
+Rules of thumb:
+
+- Three or four steps before the contact ask. Every extra step loses people.
+- One idea per screen. Short question, two to four options.
+- Lead with the easiest question, not qualifying friction.
+- Put what happens in the button. "Request my appointment", never "Submit".
+- The reviews are real reviews. Paste them from Google or leave the placeholder
+  visible so nobody mistakes an invention for a customer.
+
+`pnpm test` fails if any banned word appears in visitor-facing copy. The list is
+in `funnel.ts` with the reasoning above it: superlatives nobody can
+substantiate, bare guarantees, manufactured urgency. Write freely, then run it.
+
+---
+
+## 6. Decide the review routing
+
+`business.ts` ends with `reviewGate`. Read the comment above it before you touch
+it. It is one number:
 
 ```ts
-export const landingSpec: LandingSpec = {
-  template: 'aurora',
-  brandName: 'Client Name',
-  theme: {
-    primary: '#1F5A45',
-    accent: '#D97941',
-    bodyFontFamily: "'DM Sans', sans-serif",
-    displayFontFamily: "'Cormorant Garamond', serif",
-    // ...background, surface, text, border, and optional Google Fonts URL
-  },
-  // ...SEO, hero, benefits, reviews, FAQ, and final CTA
-  funnel: {
-    steps: [
-      { kind: 'choice', id: 'treatment', question: 'What are you interested in?', options: [
-        { id: 'prp', emoji: '💧', label: 'Thicker, fuller-looking hair', sublabel: 'PRP hair restoration' },
-      ]},
-      { kind: 'contact', id: 'contact', question: 'Where should we send details?',
-        fields: [
-          { id: 'name', label: 'Full name', placeholder: 'Your name' },
-          { id: 'phone', label: 'Phone', placeholder: 'Phone number' },
-          { id: 'email', label: 'Email', placeholder: 'you@email.com' },
-        ],
-        submitLabel: 'Book my free consultation' },
-    ],
-    // ...legal, success state, and reusable UI labels
-  },
-}
+minStarsToGoogle: 1   // every customer reaches Google. Compliant.
+minStarsToGoogle: 4   // 1 to 3 stars are intercepted.
+minStarsToGoogle: 5   // only 5 stars reach Google.
 ```
 
-Rules of thumb for high conversion:
+Sending only happy customers to Google is review gating. Google's
+prohibited-content policy names it and they disable the review function on
+listings that do it. The internal feedback form is worth keeping at any
+threshold: it is the service recovery channel, and offering it alongside a
+Google link rather than instead of one is the compliant shape.
 
-- **3–4 steps max** before the contact ask. Every extra step loses people.
-- **One idea per screen.** Short question, 2–4 options.
-- Lead with the **easiest, most engaging** question (what they want), not qualifying friction.
-- The contact step is the ask — put the value (free consult) right in the button label.
-
-Run `pnpm test` after editing — it verifies the copy is compliant and the flow ends in a
-contact step.
+This is the operator's call, not a default to leave unread.
 
 ---
 
-## 5. Brand the look
-
-Colors and fonts live beside the copy in **`src/config/funnel.ts`**:
-
-```ts
-theme: {
-  primary: '#1F5A45',
-  accent: '#D97941',
-  background: '#F6F1E8',
-  surface: '#FFFDF8',
-  text: '#17221D',
-  textMuted: '#66736C',
-  border: '#D9DED7',
-  bodyFontFamily: "'DM Sans', sans-serif",
-  displayFontFamily: "'Cormorant Garamond', serif",
-  fontStylesheetUrl: 'https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600;700&family=DM+Sans:wght@400;500;600;700&display=swap',
-}
-```
-
-The template derives the lighter and darker interaction shades from `primary` and `accent`.
-Set all neutral tokens deliberately for either a light or dark design; no component edits are
-needed.
-
----
-
-## 6. Connect Sapt
-
-Two things wire the funnel to the client's Sapt workspace:
-
-**a) Project ID** — set in `.env.local` (local) or as a repo/deploy variable:
-
-```
-NEXT_PUBLIC_SAPT_PROJECT_ID=<the client's Sapt project UUID>
-```
-
-**b) The lead object type** — open **Project Settings → Funnel** and select **Prepare funnel**.
-Sapt creates the publicly-ingestable `booking` CRM type and the starter `funnel/home` CMS item
-idempotently, so it is safe to run again. Add an optional `record.created` workflow afterward if
-the team should be notified when a lead arrives.
-
-Leads then flow: funnel → `/api/book` → Sapt CRM record → email notification. Attribution
-(UTM + click IDs) and analytics ride along automatically via `src/components/Analytics.tsx`.
-
----
-
-## 7. Preview and hand off
+## 7. Check it and hand it off
 
 ```bash
 pnpm install
-pnpm dev            # http://localhost:2001/book  — walk the funnel
+pnpm dev                    # walk the page, then /book, then /review
 pnpm typecheck && pnpm lint && pnpm test
 ```
 
-Submit a test lead and confirm the record shows up in the client's Sapt CRM.
+Then:
 
-From the Sapt dashboard, open **Project Settings → Funnel**, prepare the project's CMS and CRM,
-copy the Project ID, and choose **Deploy to Cloudflare**. Cloudflare will copy this public
-repository into your GitHub account and deploy it to your own Workers account.
+- Submit a test booking and confirm the record lands in the client's Sapt CRM.
+- Open `/review`, click through both branches, and confirm five stars reaches
+  the shop's own Google link.
+- View source and check the JSON-LD block: the address, phone and hours in it
+  must match the Maps listing exactly. A mismatch is treated as a signal that
+  one of the two is wrong.
+- Read `/llms.txt`. That is what an answer engine quotes back about this shop.
+
+From the Sapt dashboard, open **Project Settings → Funnel**, prepare the
+project, copy the Project ID, and choose **Continue to Cloudflare**. Cloudflare
+copies this repository into your GitHub account and deploys it to your own
+Workers account.
 
 ---
 
-### The 6 things that actually move conversion
+### What actually moves the needle on a shop site
 
-1. **Message match** — the funnel's first screen echoes the ad's promise.
-2. **Fewest steps** — 3–4 questions, then the ask.
-3. **Big, obvious buttons** — one tap, auto-advance, no hunting.
-4. **Value at the ask** — "Book my free consultation," not "Submit."
-5. **Low risk** — free / no-obligation beats any discount for high-ticket services.
-6. **Trust + compliance** — the 18+/results-vary line isn't just legal, it builds trust.
+1. **The phone number is reachable in one tap** from anywhere on the page.
+2. **Hours are correct and match Google.** The most common reason someone calls
+   the next shop is that they could not tell whether this one was open.
+3. **Real photographs of this shop.** Not a stock garage.
+4. **The warranty, stated in months and miles**, above the fold.
+5. **A booking flow short enough to finish in a parking lot**, on a phone, with
+   one bar of signal.
+6. **Reviews from Google**, quoted, with the reviewer's own words.

@@ -1,27 +1,32 @@
 # Sapt Setup Guide
 
-How this template integrates with Sapt. There are exactly **three** touchpoints — nothing
-else — and no SDK; everything is plain REST plus one script tag:
+How this template integrates with Sapt. There is no SDK. Everything is plain REST plus one
+script tag, across four touchpoints:
 
-1. **Analytics** (script) — works with just your Project ID.
-2. **POST → CRM** — the booking funnel saves a record to a `booking` object type. **You must
-   create that type once** (one MCP call) or bookings can't save.
-3. **GET → CMS** — off by default; an optional helper can read explicitly published section
+1. **Analytics** (script). Works with just your Project ID.
+2. **POST → CRM.** The booking funnel saves a record to a `booking` object type. **You must
+   create that type once** or bookings cannot save.
+3. **GET → Google Business Profile.** `pnpm pull-gbp` reads the shop's listing through Sapt
+   and writes it into `src/config/business.ts`. Operator tool, run once per client, needs a
+   server-side API key.
+4. **GET → CMS.** Off by default. An optional helper can read explicitly published section
    content using the public Project ID.
 
 ---
 
 ## ⚡ Fastest path — let an AI agent do it (Sapt MCP)
 
-If you have an AI agent connected to the **Sapt MCP connector**, the entire setup is three
+If you have an AI agent connected to the **Sapt MCP connector**, the whole setup is a few
 tool calls. Paste this to the agent:
 
 > Connect to the Sapt MCP. Then:
 > 1. Call `whoami` and use `activeProjectId` as my Project ID (call `switchProject` first if
 >    it's the wrong workspace). Put it in `.env.local` as `NEXT_PUBLIC_SAPT_PROJECT_ID`.
-> 2. Create the `booking` CRM type — call `createObjectType` with the exact arguments in
->    section 4 of `SAPT_SETUP_GUIDE.md`.
+> 2. Read `sapt.manifest.json` from this repo and create the `booking` CRM type by passing
+>    its `objectTypes[0]` straight to `createObjectType`.
 > 3. Confirm with `getObjectType` (slug `booking`) that `isPublicIngestable` is `true`.
+> 4. Tell me whether the project has a Google Business Profile connected, so I know whether
+>    `pnpm pull-gbp` will work yet.
 
 That's the whole thing. Everything else below is the manual/reference version.
 
@@ -63,12 +68,15 @@ Set the values you need:
 | `NEXT_PUBLIC_SAPT_BASE_URL` | – | API base (default `https://api.sapt.ai`) |
 | `NEXT_PUBLIC_SAPT_INGEST_URL` | – | Analytics ingest (default `https://ingest.sapt.ai`) |
 | `SAPT_BOOKING_TYPE_SLUG` | – | CRM type slug for bookings (default `booking`) |
+| `SAPT_API_KEY` | – | Server-side only. Required by `pnpm pull-gbp`; also enables the optional CMS read |
+| `GBP_LOCATION_ID` | – | Which Google location `pull-gbp` reads, when the project has several |
 
 Restart `pnpm dev` after editing `.env.local`.
 
 ### Theme & CMS content
 
-`src/config/funnel.ts` is the single source of truth for the live funnel, including its theme.
+`src/config/business.ts` holds the shop's facts and `src/config/funnel.ts` holds its voice
+and theme. Between them they are the source of truth for the live site.
 `useCmsContent` in `src/config/site-config.ts` stays `false` unless a developer deliberately uses
 the optional section resolver described in section 5.
 
@@ -100,62 +108,67 @@ The booking funnel saves each booking as a **`booking`** CRM record. Create that
 with `isPublicIngestable: true` so the public funnel can write to it. Until it exists, the
 booking POST returns an error. (Analytics and the funnel UI work without it.)
 
-### Set it up with one MCP call (recommended)
+### The schema lives in `sapt.manifest.json`
 
-Call `createObjectType` once with **exactly** these arguments. `isPublicIngestable: true` is
-what lets the public funnel write to it; `linksToPerson: true` auto-links each booking to a
-Person spine by email/phone.
+`sapt.manifest.json` at the root of this repo is the source of truth for every
+structure the site needs. Keeping the definition in one place is the point: an
+inline copy in this guide drifts the first time a field is added, and then two
+documents disagree about what the CRM looks like.
 
-```json
-{
-  "slug": "booking",
-  "name": "Booking",
-  "icon": "Calendar",
-  "color": "#3B82F6",
-  "description": "Booking requests captured by the landing-page funnel.",
-  "isPublicIngestable": true,
-  "linksToPerson": true,
-  "schema": {
-    "name":          { "label": "Name",           "schema": { "type": "string",  "options": {} } },
-    "email":         { "label": "Email",          "schema": { "type": "string",  "options": { "format": "email" } } },
-    "phone":         { "label": "Phone",          "schema": { "type": "string",  "options": {} } },
-    "service":       { "label": "Service",        "schema": { "type": "string",  "options": {} } },
-    "preferredDate": { "label": "Preferred Date", "schema": { "type": "string",  "options": {} } },
-    "preferredTime": { "label": "Preferred Time", "schema": { "type": "string",  "options": {} } },
-    "source":        { "label": "Source",         "schema": { "type": "string",  "options": {} } },
-    "status":        { "label": "Status",         "schema": { "type": "select",  "options": {
-      // IMPORTANT: Sapt select choices MUST be objects, not plain strings.
-      // Plain strings make the validator reject every value ("Unknown choice")
-      // and the form 502s. The app submits the LABEL, so set slug = label.
-      "choices": [
-        { "id": "new000001", "slug": "new", "label": "new" },
-        { "id": "confirm01", "slug": "confirmed", "label": "confirmed" },
-        { "id": "complete1", "slug": "completed", "label": "completed" },
-        { "id": "cancel001", "slug": "cancelled", "label": "cancelled" }
-      ]
-    } } }
-  }
-}
-```
+**Easiest:** in Sapt, open **Project Settings → Funnel** and select
+**Prepare project**. It reads the manifest off this repository's default branch
+and provisions everything, idempotently, so running it again is safe.
 
-Then verify with `getObjectType` (slug `booking`) that `isPublicIngestable` is `true`.
+**With an MCP agent:** read `sapt.manifest.json` and pass `objectTypes[0]`
+straight to `createObjectType`. Then confirm with `getObjectType` (slug
+`booking`) that `isPublicIngestable` is `true`.
 
-> Already have a type? Just flip the flag: `updateObjectType` with
-> `{ "slug": "booking", "patch": { "isPublicIngestable": true } }`. Using a different slug?
-> Set `SAPT_BOOKING_TYPE_SLUG` in your env to match.
+Two flags in there matter and are easy to miss:
+
+- `isPublicIngestable: true` is what lets the public funnel write to the type at
+  all. Without it every booking POST returns an error.
+- `linksToPerson: true` auto-links each booking to a Person by email or phone,
+  so a repeat customer is one contact rather than four records.
+
+One shape detail, because it fails loudly: Sapt `select` choices must be stored
+as `{ id, slug, label }` objects, not plain strings. Plain strings make the
+validator reject every value with "Unknown choice" and the funnel 502s. The app
+submits the **slug**.
+
+> Already have a type? Flip the flag: `updateObjectType` with
+> `{ "slug": "booking", "patch": { "isPublicIngestable": true } }`. Using a
+> different slug? Set `SAPT_BOOKING_TYPE_SLUG` in your env to match.
 
 ### By hand (dashboard)
 
 1. **CRM → Object Types → New**, slug `booking`.
-2. Toggle **Publicly ingestable** on (and **Link to person** for clean CRM joins).
-3. Add the fields above (all optional — unknown keys are accepted and flagged for review).
+2. Toggle **Publicly ingestable** on, and **Link to person** for clean joins.
+3. Add the fields from the manifest. Unknown keys are accepted and flagged for
+   review rather than dropped, so a missing field loses reporting, not the lead.
+
+### The pipeline
+
+`status` is the shop's board, not a generic lead stage:
+`new → contacted → booked → in_shop → completed → lost`.
+
+`source` distinguishes where a record came from:
+`booking_funnel`, `feedback`, `phone`, `walk_in`. This matters more than it
+looks. The review flow writes `feedback` rows into the same type, and counting
+those as leads would flatter every conversion number the shop is shown.
 
 ### Automations
 
-Add a workflow that triggers on `record.created` for the `booking` type to send a
-confirmation email, notify your team, etc. The funnel sends these keys in `data`: `name`,
-`email`, `phone`, `service`, `preferredDate`, `preferredTime`, `status`, `source`, plus any
-UTM params.
+Add a workflow that triggers on `record.created` for the `booking` type to text
+the shop, email the customer, or start a follow-up. Filter on
+`source = booking_funnel` unless you mean to fire on feedback too.
+
+The funnel sends these keys in `data`: `name`, `email`, `phone`, `vehicle`,
+`issue`, `timing`, `service`, `preferredDate`, `preferredTime`, `status`,
+`source`, `answers` (the raw step answers as JSON), `saptVisitorId`, plus any
+UTM params. `issue`, `timing` and `vehicle` are promoted out of the `answers`
+blob deliberately: a shop filters its board by what is wrong with the car and
+how soon it needs to be in, and a workflow cannot branch on a field buried in
+JSON.
 
 ## 5. Optional: CMS-driven content
 
