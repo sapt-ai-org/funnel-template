@@ -9,7 +9,13 @@
 
 @theme {
   /* ═══ PRIMARY BRAND COLORS ═══
-     Main brand color used for buttons, links, and key UI elements */
+     Main brand color used for buttons, links, and key UI elements.
+
+     The bare `--color-primary` is what Tailwind resolves `bg-primary`,
+     `text-primary` and `border-primary` against. Without it those classes
+     compile to nothing at all, which is silent: every CTA on the site becomes
+     a transparent box with white text on it. Keep it equal to the 500 step. */
+  --color-primary: #C8102E;
   --color-primary-50: #FBECEE;
   --color-primary-100: #F5D4D9;
   --color-primary-200: #ECAEB8;
@@ -22,7 +28,9 @@
   --color-primary-900: #580714;
 
   /* ═══ ACCENT COLORS ═══
-     Secondary color for highlights, badges, and warm CTAs */
+     Secondary color for highlights, badges, and warm CTAs.
+     `--color-accent` backs `bg-accent`; see the note above. */
+  --color-accent: #1D4ED8;
   --color-accent-50: #EDF1FC;
   --color-accent-100: #D6DFF8;
   --color-accent-200: #B2C3F2;

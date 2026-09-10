@@ -67,9 +67,19 @@ export const SLOTS: Record<SlotId, ImageSlot> = {
  * page. The diagonal hatch makes it unmistakably a placeholder at a glance —
  * a plain grey box gets mistaken for a design choice and ships.
  */
-export function placeholderSrc(slot: ImageSlot): string {
+export function placeholderSrc(slot: ImageSlot, options: { withLabel?: boolean } = {}): string {
+  // A slot that is stretched to fill a box (the hero) crops to a shape this
+  // SVG cannot know, so its centred label lands wherever the crop puts it,
+  // which on a phone is directly behind the headline. Those callers suppress
+  // the label and state the brief in the page instead.
+  const withLabel = options.withLabel ?? true
   const w = 1200
   const h = Math.round(w / slot.ratio)
+  // The SVG is always 1200 wide and scales down to whatever the slot gets, so
+  // the label has to be a fraction of the viewBox width rather than a fixed
+  // size. At a flat 30 it rendered around 8px in a three-across grid on a
+  // phone, which is the one place the brief most needs reading.
+  const label = Math.round(w * 0.045)
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}" viewBox="0 0 ${w} ${h}">
   <defs>
     <pattern id="h" width="16" height="16" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
@@ -78,9 +88,13 @@ export function placeholderSrc(slot: ImageSlot): string {
     </pattern>
   </defs>
   <rect width="${w}" height="${h}" fill="url(#h)"/>
-  <rect x="12" y="12" width="${w - 24}" height="${h - 24}" fill="none" stroke="#00000018" stroke-width="2"/>
-  <text x="50%" y="50%" text-anchor="middle" font-family="system-ui, sans-serif" font-size="30" fill="#6B6A66">PHOTO NEEDED</text>
-  <text x="50%" y="50%" dy="42" text-anchor="middle" font-family="system-ui, sans-serif" font-size="24" fill="#8E8D88">${escapeXml(slot.brief)}</text>
+  <rect x="12" y="12" width="${w - 24}" height="${h - 24}" fill="none" stroke="#00000018" stroke-width="2"/>${
+    withLabel
+      ? `
+  <text x="50%" y="50%" text-anchor="middle" font-family="system-ui, sans-serif" font-size="${label}" fill="#6B6A66">PHOTO NEEDED</text>
+  <text x="50%" y="50%" dy="${Math.round(label * 1.25)}" text-anchor="middle" font-family="system-ui, sans-serif" font-size="${Math.round(label * 0.72)}" fill="#8E8D88">${escapeXml(slot.brief)}</text>`
+      : ''
+  }
 </svg>`
   return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`
 }
@@ -92,11 +106,15 @@ function escapeXml(s: string): string {
 }
 
 /** The src to render for a slot, and whether it is still a placeholder. */
-export function image(id: SlotId): { src: string; alt: string; ratio: number; missing: boolean } {
+export function image(
+  id: SlotId,
+  options: { withLabel?: boolean } = {}
+): { src: string; alt: string; brief: string; ratio: number; missing: boolean } {
   const slot = SLOTS[id]
   const missing = !slot.src
   return {
-    src: slot.src ?? placeholderSrc(slot),
+    src: slot.src ?? placeholderSrc(slot, options),
+    brief: slot.brief,
     // Falls back to the brief so alt text is never empty, which is both an
     // accessibility failure and a wasted ranking signal on a local site.
     alt: slot.alt ?? slot.brief,

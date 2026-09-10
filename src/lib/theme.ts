@@ -27,6 +27,10 @@ function mix(hex: string, target: string, amount: number): string {
 /** Convert the compact theme in funnel.ts into every CSS token the templates use. */
 export function themeStyle(theme: LandingSpec['theme']): ThemeStyle {
   return {
+    // The bare tokens back `bg-primary` / `bg-accent`. A ramp alone leaves
+    // those classes resolving to nothing, so every CTA loses its fill.
+    '--color-primary': theme.primary,
+    '--color-accent': theme.accent,
     '--color-primary-50': mix(theme.primary, '#ffffff', 0.92),
     '--color-primary-100': mix(theme.primary, '#ffffff', 0.82),
     '--color-primary-200': mix(theme.primary, '#ffffff', 0.66),

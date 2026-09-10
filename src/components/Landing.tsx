@@ -26,16 +26,35 @@ import { localBusinessSchema } from '@/lib/schema'
 import { ArrowUpRight, Clock, MapPin, Phone, ShieldCheck, Star } from 'lucide-react'
 import { useState } from 'react'
 
-/** Renders a slot, placeholder included, at its declared ratio. */
-function Shot({ id, className }: { id: SlotId; className?: string }) {
-  const img = image(id)
+/**
+ * Renders a slot, placeholder included.
+ *
+ * By default the slot's declared ratio sets the height, which is what keeps a
+ * grid of photos from reflowing as they load. `fill` instead stretches the
+ * photo to whatever height its parent already has: the hero has copy laid over
+ * it, and on a phone that copy is twice as tall as a 16:9 crop of the same
+ * width, so there the copy has to set the height and the photo has to follow.
+ */
+function Shot({ id, className, fill }: { id: SlotId; className?: string; fill?: boolean }) {
+  const img = image(id, { withLabel: !fill })
   return (
     <div
-      className={className}
-      style={{ aspectRatio: String(img.ratio), background: '#EEEDEA', overflow: 'hidden' }}
+      className={fill ? `absolute inset-0 ${className ?? ''}` : className}
+      style={{
+        ...(fill ? null : { aspectRatio: String(img.ratio) }),
+        background: '#EEEDEA',
+        overflow: 'hidden',
+      }}
     >
       {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src={img.src} alt={img.alt} className="h-full w-full object-cover" loading="lazy" />
+      <img
+        src={img.src}
+        alt={img.alt}
+        className="h-full w-full object-cover"
+        // The hero is the largest-contentful paint. Lazy-loading it is a
+        // measurable delay on the one image the visitor is waiting for.
+        loading={fill ? 'eager' : 'lazy'}
+      />
     </div>
   )
 }
@@ -66,6 +85,7 @@ export function Landing({ spec }: { spec: LandingSpec }) {
 
   const today = new Date().getDay()
   const todayHours = business.hours.find((h) => h.day === today)
+  const hero = image('hero', { withLabel: false })
 
   return (
     <div className="bg-bg text-text">
@@ -78,30 +98,33 @@ export function Landing({ spec }: { spec: LandingSpec }) {
 
       {/* ── Utility bar: rating, phone, book. Never scrolls away on desktop. ── */}
       <div className="border-b border-border bg-text text-bg">
-        <div className="mx-auto flex max-w-6xl flex-wrap items-center gap-x-6 gap-y-2 px-5 py-2.5 text-sm">
+        <div className="mx-auto flex max-w-6xl items-center gap-x-6 px-5 py-2.5 text-sm">
           {business.rating && business.rating.count > 0 ? (
             <a
               href={business.mapsUrl || '#reviews'}
-              className="flex items-center gap-2 opacity-90 hover:opacity-100"
+              className="flex min-w-0 items-center gap-2 opacity-90 hover:opacity-100"
             >
               <Stars value={business.rating.value} />
               <span className="font-semibold">{business.rating.value.toFixed(1)}</span>
-              <span className="underline underline-offset-2">
+              <span className="truncate underline underline-offset-2">
                 {business.rating.count} Google reviews
               </span>
             </a>
           ) : (
-            <span className="opacity-70">{business.category}</span>
+            <span className="truncate opacity-70">{business.category}</span>
           )}
 
-          <a href={phoneHref()} className="ml-auto flex items-center gap-2 font-semibold">
+          {/* Hidden on a phone: both of these repeat the sticky bar pinned to
+              the bottom of the same screen, and wrapping them here pushed the
+              headline off the top of the viewport. */}
+          <a href={phoneHref()} className="ml-auto hidden items-center gap-2 font-semibold sm:flex">
             <Phone className="h-4 w-4" />
             {business.phone}
           </a>
           <button
             type="button"
             onClick={openFunnel}
-            className="rounded-full bg-primary px-4 py-1.5 text-sm font-semibold text-white"
+            className="hidden rounded-full bg-primary px-4 py-1.5 text-sm font-semibold text-white sm:block"
           >
             {spec.ctaLabel}
           </button>
@@ -110,7 +133,7 @@ export function Landing({ spec }: { spec: LandingSpec }) {
 
       {/* ── Header ── */}
       <header className="border-b border-border">
-        <div className="mx-auto flex max-w-6xl items-center justify-between gap-6 px-5 py-5">
+        <div className="mx-auto flex max-w-6xl items-center justify-between gap-6 px-5 py-4 sm:py-5">
           {spec.logo ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img src={spec.logo.src} alt={spec.logo.alt} className="h-9 w-auto object-contain" />
@@ -125,42 +148,59 @@ export function Landing({ spec }: { spec: LandingSpec }) {
         </div>
       </header>
 
-      {/* ── Hero: the building, not a stock garage ── */}
-      <section className="relative">
-        <Shot id="hero" className="w-full" />
-        <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/35 to-transparent" />
-        <div className="absolute inset-x-0 bottom-0">
-          <div className="mx-auto max-w-6xl px-5 pb-8 sm:pb-12">
-            <h1 className="max-w-[18ch] text-balance font-display text-4xl font-bold leading-[1.05] text-white sm:text-6xl">
-              {spec.hero.headline}
-            </h1>
-            <p className="mt-4 max-w-[46ch] text-base text-white/85 sm:text-lg">
-              {spec.hero.subhead}
-            </p>
-            <div className="mt-6 flex flex-wrap items-center gap-3">
-              <button
-                type="button"
-                onClick={openFunnel}
-                className="inline-flex items-center gap-2 rounded-full bg-primary px-6 py-3.5 text-base font-semibold text-white"
-              >
-                {spec.ctaLabel}
-                <ArrowUpRight className="h-4 w-4" />
-              </button>
-              <a
-                href={phoneHref()}
-                className="inline-flex items-center gap-2 rounded-full border border-white/40 px-6 py-3.5 text-base font-semibold text-white"
-              >
-                <Phone className="h-4 w-4" />
-                Call {business.phone}
-              </a>
-            </div>
+      {/* ── Hero: the building, not a stock garage ──
+          The photo sits BEHIND the copy in the stacking order but not above it
+          in the layout. The copy is in normal flow, so the section is always
+          as tall as the words plus the buttons; the photo stretches to match.
+          Sizing the section by the photo's ratio instead put a 400px block of
+          absolutely positioned copy inside a 219px box on a phone, and it
+          spilled up through the header. */}
+      <section className="relative isolate overflow-hidden">
+        <div className="absolute inset-0 -z-10">
+          <Shot id="hero" fill />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/55 to-black/25" />
+        </div>
+        {/* The brief for the one photo that cannot be skipped, stated in the
+            page rather than inside the placeholder image, because a stretched
+            placeholder crops its own caption to wherever the crop lands. It
+            disappears the moment the slot has a photo. */}
+        {hero.missing ? (
+          <p className="pointer-events-none absolute inset-x-0 top-0 z-10 bg-black/50 px-5 py-2 text-center text-[11px] font-medium uppercase tracking-wider text-white/85">
+            Photo needed: {hero.brief}
+          </p>
+        ) : null}
+        <div className="mx-auto max-w-6xl px-5 pb-10 pt-20 sm:pb-14 sm:pt-48">
+          <h1 className="max-w-[18ch] text-balance font-display text-[clamp(30px,8.5vw,60px)] font-bold leading-[1.05] text-white">
+            {spec.hero.headline}
+          </h1>
+          <p className="mt-4 max-w-[46ch] text-base text-white/85 sm:text-lg">
+            {spec.hero.subhead}
+          </p>
+          {/* Full-width buttons on a phone: a thumb reaching across a moving
+              car does not aim. They shrink to their content from `sm` up. */}
+          <div className="mt-7 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
+            <button
+              type="button"
+              onClick={openFunnel}
+              className="inline-flex items-center justify-center gap-2 rounded-full bg-primary px-6 py-3.5 text-base font-semibold text-white"
+            >
+              {spec.ctaLabel}
+              <ArrowUpRight className="h-4 w-4" />
+            </button>
+            <a
+              href={phoneHref()}
+              className="inline-flex items-center justify-center gap-2 rounded-full border border-white/50 bg-black/25 px-6 py-3.5 text-base font-semibold text-white backdrop-blur-sm"
+            >
+              <Phone className="h-4 w-4" />
+              Call {business.phone}
+            </a>
           </div>
         </div>
       </section>
 
       {/* ── Amenities + warranty: what actually decides the call ── */}
       <section className="border-b border-border bg-surface">
-        <div className="mx-auto grid max-w-6xl gap-8 px-5 py-10 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="mx-auto grid max-w-6xl gap-5 px-5 py-8 sm:grid-cols-2 sm:gap-8 sm:py-10 lg:grid-cols-4">
           {business.warranty ? (
             <div className="flex items-start gap-3">
               <ShieldCheck className="mt-0.5 h-6 w-6 shrink-0 text-primary" />
@@ -182,7 +222,7 @@ export function Landing({ spec }: { spec: LandingSpec }) {
       </section>
 
       {/* ── Welcome ── */}
-      <section className="mx-auto grid max-w-6xl gap-10 px-5 py-16 lg:grid-cols-2 lg:items-center lg:gap-16">
+      <section className="mx-auto grid max-w-6xl gap-8 px-5 py-12 sm:py-16 lg:grid-cols-2 lg:items-center lg:gap-16">
         <Shot id="exterior" className="rounded-2xl" />
         <div>
           <p className="text-xs uppercase tracking-[0.2em] text-text-light">
@@ -210,7 +250,7 @@ export function Landing({ spec }: { spec: LandingSpec }) {
 
       {/* ── Services ── */}
       <section className="border-y border-border bg-surface">
-        <div className="mx-auto max-w-6xl px-5 py-16">
+        <div className="mx-auto max-w-6xl px-5 py-12 sm:py-16">
           <h2 className="font-display text-3xl font-bold sm:text-4xl">What we fix</h2>
           <div className="mt-8 grid gap-x-8 gap-y-4 sm:grid-cols-2 lg:grid-cols-3">
             {business.services.map((s, i) => (
@@ -231,7 +271,7 @@ export function Landing({ spec }: { spec: LandingSpec }) {
       </section>
 
       {/* ── Reviews ── */}
-      <section id="reviews" className="mx-auto max-w-6xl px-5 py-16">
+      <section id="reviews" className="mx-auto max-w-6xl px-5 py-12 sm:py-16">
         <div className="flex flex-wrap items-end justify-between gap-4">
           <h2 className="font-display text-3xl font-bold sm:text-4xl">What customers say</h2>
           {business.reviewUrl ? (
@@ -269,7 +309,7 @@ export function Landing({ spec }: { spec: LandingSpec }) {
 
       {/* ── Team ── */}
       <section className="border-y border-border bg-surface">
-        <div className="mx-auto grid max-w-6xl gap-10 px-5 py-16 lg:grid-cols-2 lg:items-center lg:gap-16">
+        <div className="mx-auto grid max-w-6xl gap-8 px-5 py-12 sm:py-16 lg:grid-cols-2 lg:items-center lg:gap-16">
           <div>
             <h2 className="font-display text-3xl font-bold sm:text-4xl">The people doing the work</h2>
             <p className="mt-5 text-base leading-relaxed text-text-muted">
@@ -294,13 +334,13 @@ export function Landing({ spec }: { spec: LandingSpec }) {
       </section>
 
       {/* ── Book ── */}
-      <section className="mx-auto max-w-6xl px-5 py-16 text-center">
+      <section className="mx-auto max-w-6xl px-5 py-12 text-center sm:py-16">
         <h2 className="font-display text-3xl font-bold sm:text-5xl">{spec.finalCta.title}</h2>
         <p className="mx-auto mt-4 max-w-[46ch] text-text-muted">{spec.finalCta.subhead}</p>
         <button
           type="button"
           onClick={openFunnel}
-          className="mt-8 inline-flex items-center gap-2 rounded-full bg-primary px-8 py-4 text-lg font-semibold text-white"
+          className="mt-8 inline-flex w-full items-center justify-center gap-2 rounded-full bg-primary px-8 py-4 text-lg font-semibold text-white sm:w-auto"
         >
           {spec.ctaLabel}
           <ArrowUpRight className="h-5 w-5" />
@@ -309,7 +349,7 @@ export function Landing({ spec }: { spec: LandingSpec }) {
 
       {/* ── Footer: the facts, matching the Google listing exactly ── */}
       <footer className="border-t border-border bg-text text-bg">
-        <div className="mx-auto grid max-w-6xl gap-10 px-5 py-14 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="mx-auto grid max-w-6xl gap-8 px-5 py-10 sm:grid-cols-2 sm:gap-10 sm:py-14 lg:grid-cols-3">
           <div>
             <p className="font-display text-lg font-bold">{business.name}</p>
             <a
@@ -385,7 +425,7 @@ export function Landing({ spec }: { spec: LandingSpec }) {
       </footer>
 
       {/* ── Sticky call/book bar. A shop owner's customer is on a phone. ── */}
-      <div className="fixed inset-x-0 bottom-0 z-40 flex gap-2 border-t border-border bg-bg p-3 sm:hidden">
+      <div className="fixed inset-x-0 bottom-0 z-40 flex gap-2 border-t border-border bg-bg px-3 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] sm:hidden">
         <a
           href={phoneHref()}
           className="flex flex-1 items-center justify-center gap-2 rounded-full border border-border py-3 font-semibold"
@@ -401,7 +441,8 @@ export function Landing({ spec }: { spec: LandingSpec }) {
           {spec.ctaLabel}
         </button>
       </div>
-      <div className="h-16 sm:hidden" />
+      {/* Stands in for the fixed bar above, which is out of flow. */}
+      <div className="h-[calc(72px+env(safe-area-inset-bottom))] sm:hidden" />
 
       {open && (
         <FunnelOverlay
