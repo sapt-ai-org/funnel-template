@@ -69,10 +69,9 @@ export async function POST(request: Request) {
       ...(body.vehicle ? { vehicle: body.vehicle } : {}),
       preferredDate: body.date,
       preferredTime: body.time,
-      // `status` targets a Sapt SELECT field. Its choices MUST be stored as
-      // {id,slug,label} objects in the project (slug = the value sent here),
-      // or Sapt rejects every submit with "Unknown choice". See SAPT_SETUP_GUIDE.md.
-      status: 'new',
+      // No `status`. The booking type carries a real stage pipeline, and a
+      // record lands on whichever stage is marked `isInitial` without being
+      // told. Sending one would be a value for a field that does not exist.
       source: 'booking_funnel',
       // Funnel step answers, stored as JSON. Unknown fields land as "pending
       // fields" in the Sapt schema editor — promote them to real fields if you

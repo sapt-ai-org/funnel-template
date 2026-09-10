@@ -5,8 +5,8 @@
       "slug": "booking",
       "name": "Booking",
       "description": "Leads from the funnel and feedback from the review flow. Public-ingestable; links to a Person by email/phone. Every field the site posts is declared here so it lands as a real column a workflow can branch on, not as a pending field.",
-      "icon": "CalendarCheck",
-      "color": "#948cc1",
+      "icon": "Wrench",
+      "color": "#C8102E",
       "isPublicIngestable": true,
       "linksToPerson": true,
       "schema": {
@@ -119,47 +119,6 @@
           },
           "description": "Human-readable label for what they picked."
         },
-        "status": {
-          "label": "Status",
-          "schema": {
-            "type": "select",
-            "options": {
-              "choices": [
-                {
-                  "id": "new",
-                  "slug": "new",
-                  "label": "New"
-                },
-                {
-                  "id": "contacted",
-                  "slug": "contacted",
-                  "label": "Contacted"
-                },
-                {
-                  "id": "booked",
-                  "slug": "booked",
-                  "label": "Booked"
-                },
-                {
-                  "id": "in_shop",
-                  "slug": "in_shop",
-                  "label": "In the shop"
-                },
-                {
-                  "id": "completed",
-                  "slug": "completed",
-                  "label": "Completed"
-                },
-                {
-                  "id": "lost",
-                  "slug": "lost",
-                  "label": "Lost"
-                }
-              ]
-            }
-          },
-          "description": "A shop pipeline, not a generic one. Records land on `new`."
-        },
         "source": {
           "label": "Source",
           "schema": {
@@ -175,6 +134,11 @@
                   "id": "feedback",
                   "slug": "feedback",
                   "label": "Review feedback"
+                },
+                {
+                  "id": "missed_call",
+                  "slug": "missed_call",
+                  "label": "Missed call"
                 },
                 {
                   "id": "phone",
@@ -231,7 +195,44 @@
           },
           "description": "Raw funnel answers. The ones worth reporting on are promoted to real fields above."
         }
-      }
+      },
+      "statuses": [
+        {
+          "key": "new",
+          "label": "New",
+          "color": "#94a3b8",
+          "isInitial": true
+        },
+        {
+          "key": "contacted",
+          "label": "Contacted",
+          "color": "#1D4ED8"
+        },
+        {
+          "key": "booked",
+          "label": "Booked",
+          "color": "#C8102E",
+          "capiStage": "scheduled"
+        },
+        {
+          "key": "in_shop",
+          "label": "In the shop",
+          "color": "#B45309"
+        },
+        {
+          "key": "completed",
+          "label": "Completed",
+          "color": "#16a34a",
+          "capiStage": "purchased",
+          "isTerminal": true
+        },
+        {
+          "key": "lost",
+          "label": "Lost",
+          "color": "#64748b",
+          "isTerminal": true
+        }
+      ]
     }
   ],
   "branding": {

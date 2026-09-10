@@ -48,7 +48,7 @@ export async function POST(request: Request) {
       email: body.email?.trim() || '',
       phone: body.phone?.trim() || '',
       service: 'Customer feedback',
-      status: 'new',
+      // No `status`: the pipeline assigns the initial stage itself.
       source: 'feedback',
       rating,
       answers: JSON.stringify({ rating, comments: body.comments?.trim() || '' }),

@@ -135,6 +135,12 @@ as `{ id, slug, label }` objects, not plain strings. Plain strings make the
 validator reject every value with "Unknown choice" and the funnel 502s. The app
 submits the **slug**.
 
+The pipeline is not one of those. `statuses` is a separate top-level list of
+stages, and a record lands on whichever is marked `isInitial` on its own, which
+is why neither route sends a `status`. Two of the stages carry a `capiStage`, so
+moving a job to Booked or Completed reports a real shop outcome back to the ad
+platforms instead of a form fill.
+
 > Already have a type? Flip the flag: `updateObjectType` with
 > `{ "slug": "booking", "patch": { "isPublicIngestable": true } }`. Using a
 > different slug? Set `SAPT_BOOKING_TYPE_SLUG` in your env to match.
@@ -148,8 +154,8 @@ submits the **slug**.
 
 ### The pipeline
 
-`status` is the shop's board, not a generic lead stage:
-`new → contacted → booked → in_shop → completed → lost`.
+The board is the type's `statuses`, not a field:
+`new → contacted → booked → in_shop → completed`, plus `lost`.
 
 `source` distinguishes where a record came from:
 `booking_funnel`, `feedback`, `phone`, `walk_in`. This matters more than it
@@ -163,9 +169,8 @@ the shop, email the customer, or start a follow-up. Filter on
 `source = booking_funnel` unless you mean to fire on feedback too.
 
 The funnel sends these keys in `data`: `name`, `email`, `phone`, `vehicle`,
-`issue`, `timing`, `service`, `preferredDate`, `preferredTime`, `status`,
-`source`, `answers` (the raw step answers as JSON), `saptVisitorId`, plus any
-UTM params. `issue`, `timing` and `vehicle` are promoted out of the `answers`
+`issue`, `timing`, `service`, `preferredDate`, `preferredTime`, `source`,
+`answers` (the raw step answers as JSON), `saptVisitorId`, plus any UTM params. `issue`, `timing` and `vehicle` are promoted out of the `answers`
 blob deliberately: a shop filters its board by what is wrong with the car and
 how soon it needs to be in, and a workflow cannot branch on a field buried in
 JSON.
