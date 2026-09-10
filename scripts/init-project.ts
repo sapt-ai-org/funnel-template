@@ -6,14 +6,18 @@
  *
  *   1. Stamps `wrangler.jsonc` with a project-specific Worker name (and, when
  *      given, a custom route).
- *   2. Prunes the template library down to the one template that was picked,
- *      and removes everything that only exists to serve the preview gallery.
+ *   2. Removes the handful of files that exist only to guard the template
+ *      itself and have no business in a client repo.
  *   3. Stamps the client's real colors, fonts, logo, and brand name into the
  *      checkout, replacing the template's placeholder defaults.
  *
+ * There is one template. The multi-template gallery and its TEMPLATE_ID
+ * selection were removed: a shop site and a clinic site differ by content and
+ * branding, not by layout, and carrying two layouts meant every change had to
+ * be made and reviewed twice.
+ *
  * Environment variables:
  * - PROJECT_SLUG   Kebab-case identifier → Worker name "{slug}-landing"
- * - TEMPLATE_ID    Which template to keep. Defaults to "aurora".
  * - ROUTE_PATTERN  (optional) custom domain route, e.g. "site.example.com/*"
  * - ROUTE_ZONE_ID  (optional) Cloudflare zone id for the route
  * - PROJECT_NAME   (optional) client brand name, stamped into `funnel.ts`
@@ -26,57 +30,15 @@
 import fs from 'fs'
 import path from 'path'
 
-const TEMPLATES_DIR = 'src/templates'
-const PAGE_PATH = 'src/app/page.tsx'
 const GLOBALS_CSS_PATH = 'src/app/globals.css'
 const FUNNEL_CONFIG_PATH = 'src/config/funnel.ts'
 const PUBLIC_DIR = 'public'
 
-/** Exists only to serve the preview gallery or guard the template itself. */
-const GALLERY_ONLY_PATHS = [
-  'src/templates/registry.ts',
-  'src/app/preview',
+/** Exists only to guard the template itself; no business in a client repo. */
+const TEMPLATE_ONLY_PATHS = [
   // A real client's real phone number is not a leak; this guard is template-only.
   'src/config/placeholder.test.ts',
 ]
-
-const LANDING_IMPORT =
-  /^(\s*import\s*\{\s*Landing\s*\}\s*from\s*')@\/templates\/[^/]+\/Landing(';?\s*)$/m
-
-/**
- * Repoint `page.tsx`'s Landing import at `templateId`. Throws rather than
- * returning the input unchanged when nothing matches — silently shipping the
- * wrong template is the worst failure available here.
- */
-export function rewriteLandingImport(source: string, templateId: string): string {
-  if (!LANDING_IMPORT.test(source)) {
-    throw new Error(
-      `No Landing import found in ${PAGE_PATH}; cannot select template "${templateId}"`
-    )
-  }
-  return source.replace(LANDING_IMPORT, `$1@/templates/${templateId}/Landing$2`)
-}
-
-/** Repo-relative paths to delete so only `chosenId` survives. */
-export function prunePaths(allTemplateIds: string[], chosenId: string): string[] {
-  if (!allTemplateIds.includes(chosenId)) {
-    throw new Error(
-      `Cannot initialize: unknown template "${chosenId}" (have: ${allTemplateIds.join(', ')})`
-    )
-  }
-  return [
-    ...allTemplateIds.filter((id) => id !== chosenId).map((id) => `${TEMPLATES_DIR}/${id}`),
-    ...GALLERY_ONLY_PATHS,
-  ]
-}
-
-function listTemplateIds(root: string): string[] {
-  return fs
-    .readdirSync(path.join(root, TEMPLATES_DIR), { withFileTypes: true })
-    .filter((e) => e.isDirectory())
-    .map((e) => e.name)
-    .sort()
-}
 
 function writeWrangler(root: string, projectSlug: string): void {
   const routePattern = process.env.ROUTE_PATTERN
@@ -97,19 +59,6 @@ function writeWrangler(root: string, projectSlug: string): void {
 
   fs.writeFileSync(path.join(root, 'wrangler.jsonc'), JSON.stringify(wranglerConfig, null, 2))
   console.log(`Generated wrangler.jsonc for "${projectSlug}-landing"`)
-}
-
-function selectTemplate(root: string, templateId: string): void {
-  const toDelete = prunePaths(listTemplateIds(root), templateId) // throws on unknown id
-
-  const pagePath = path.join(root, PAGE_PATH)
-  fs.writeFileSync(pagePath, rewriteLandingImport(fs.readFileSync(pagePath, 'utf8'), templateId))
-
-  for (const rel of toDelete) {
-    fs.rmSync(path.join(root, rel), { recursive: true, force: true })
-  }
-
-  console.log(`Selected template "${templateId}"; removed ${toDelete.length} path(s)`)
 }
 
 /* ════════════════════════════════════════════════════════════════════════════
@@ -413,14 +362,13 @@ if (process.env.VITEST === 'true') {
   console.log('init-project: skipped (VITEST=true — module imported by a test)')
 } else {
   const root = process.cwd()
-  const templateId = process.env.TEMPLATE_ID || 'aurora'
-
-  // Validate BEFORE any write. An unknown template id must fail with the
-  // checkout untouched, not with wrangler.jsonc already stamped for a client.
-  prunePaths(listTemplateIds(root), templateId)
 
   writeWrangler(root, process.env.PROJECT_SLUG || 'sapt')
-  selectTemplate(root, templateId)
+
+  for (const rel of TEMPLATE_ONLY_PATHS) {
+    fs.rmSync(path.join(root, rel), { recursive: true, force: true })
+  }
+  console.log(`Removed ${TEMPLATE_ONLY_PATHS.length} template-only path(s)`)
 
   // Branding is best-effort: a bad or missing payload must never fail
   // provisioning — the site must still ship with the template's defaults.

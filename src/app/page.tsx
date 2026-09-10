@@ -1,6 +1,6 @@
 import { landingSpec } from '@/config/funnel'
-import { Landing as AuroraLanding } from '@/templates/aurora/Landing'
-import { Landing as MonoLanding } from '@/templates/mono/Landing'
+import { Landing as AuroraLanding } from '@/components/Landing'
+import { Landing as MonoLanding } from '@/components/Landing'
 
 /**
  * The whole client site is one page: a perspective.co-style funnel landing.
