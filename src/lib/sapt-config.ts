@@ -11,7 +11,7 @@
  * - NEXT_PUBLIC_SAPT_PROJECT_ID    (required) your Sapt project UUID
  * - NEXT_PUBLIC_SAPT_BASE_URL      (optional) API base, default https://api.sapt.ai
  * - NEXT_PUBLIC_SAPT_INGEST_URL    (optional) analytics ingest, default https://ingest.sapt.ai
- * - SAPT_BOOKING_TYPE_SLUG         (optional, SERVER) CRM typed-record slug, default "booking"
+ * - SAPT_BOOKING_TYPE_SLUG         (optional, SERVER) CRM typed-record slug, default "appointment_request"
  */
 
 /** Values that are safe to read in the browser (inlined at build time). */
@@ -23,7 +23,15 @@ export interface SaptPublicConfig {
 
 const DEFAULT_BASE_URL = 'https://api.sapt.ai'
 const DEFAULT_INGEST_URL = 'https://ingest.sapt.ai'
-const DEFAULT_BOOKING_TYPE_SLUG = 'booking'
+/**
+ * The CRM type a submitted form becomes. "appointment_request" says what the
+ * record actually is: someone asked for a time, which the shop has not agreed
+ * to yet. Calling it a booking would claim the appointment exists.
+ *
+ * The env var keeps its old name so a project that already sets it keeps
+ * working; only the default changed.
+ */
+const DEFAULT_BOOKING_TYPE_SLUG = 'appointment_request'
 
 /** Read the browser-safe Sapt config. */
 export function getSaptPublicConfig(): SaptPublicConfig {

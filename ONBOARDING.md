@@ -55,6 +55,14 @@ pnpm pull-gbp --dry-run   # see what it would write
 pnpm pull-gbp             # write it
 ```
 
+> **Do the CRM type while you are in Sapt.** The booking form cannot save
+> anything until the client's project has the `appointment_request` object type.
+> In Sapt, open **Project Settings → Funnel** and select **Prepare project**: it
+> reads `sapt.manifest.json` off this repo and provisions the type, idempotently,
+> so running it twice is safe. Skip it and everything looks fine right up until
+> the test booking in step 7 fails. Details and the by-hand version are in
+> SAPT_SETUP_GUIDE.md, section 4.
+
 It fills every field marked `@gbp` in `business.ts`: name, category,
 description, phone, address, hours, services, rating and review count, the
 Google review link, the Maps link, the Place ID. It downloads the profile's

@@ -14,7 +14,7 @@ had to be made twice.
 ## Before you deploy
 
 1. In Sapt, open **Project Settings → Funnel**.
-2. Select **Prepare project** to create the `booking` CRM type and seed branding.
+2. Select **Prepare project** to create the `appointment_request` CRM type and seed branding.
 3. Copy the Project ID shown on that page.
 4. Select **Continue to Cloudflare** and paste the Project ID when Cloudflare
    asks for `NEXT_PUBLIC_SAPT_PROJECT_ID`.
@@ -146,7 +146,7 @@ sequence with the project's own ID already in it.
 | `NEXT_PUBLIC_SAPT_BASE_URL` | No | Sapt API base; defaults to `https://api.sapt.ai` |
 | `NEXT_PUBLIC_SAPT_INGEST_URL` | No | Analytics ingest base; defaults to `https://ingest.sapt.ai` |
 | `NEXT_PUBLIC_META_PIXEL_ID` | No | The shop's Meta Pixel; its Lead dedupes against Sapt's server-side copy |
-| `SAPT_BOOKING_TYPE_SLUG` | No | CRM type used for leads; defaults to `booking` |
+| `SAPT_BOOKING_TYPE_SLUG` | No | CRM type used for leads; defaults to `appointment_request` |
 | `SAPT_API_KEY` | No | Server-side only. Required by `pnpm pull-gbp` |
 | `GBP_LOCATION_ID` | No | Which Google location `pull-gbp` reads, when the project has several |
 | `APP_KEY` | No | Worker secret. Verifies Sapt's content webhook so edits show at once |

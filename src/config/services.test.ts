@@ -7,8 +7,8 @@ import { slugify } from '@/lib/cms'
 
 const issueChoices = (() => {
   const types = (manifest as { objectTypes?: { slug: string; schema: Record<string, unknown> }[] }).objectTypes ?? []
-  const booking = types.find((t) => t.slug === 'booking')
-  const issue = booking?.schema.issue as { schema: { options: { choices: { id: string }[] } } } | undefined
+  const appointmentRequest = types.find((t) => t.slug === 'appointment_request')
+  const issue = appointmentRequest?.schema.issue as { schema: { options: { choices: { id: string }[] } } } | undefined
   return issue?.schema.options.choices.map((c) => c.id) ?? []
 })()
 

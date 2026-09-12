@@ -2,9 +2,9 @@
   "$comment": "Structures this template needs. On Initialize, the Sapt platform reads this and provisions them into the client's project (idempotent). Edit here to change what a new client gets. The site itself is code-driven, so nothing here seeds page copy.",
   "objectTypes": [
     {
-      "slug": "booking",
-      "name": "Booking",
-      "description": "Leads from the funnel and feedback from the review flow. Public-ingestable; links to a Person by email/phone. Every field the site posts is declared here so it lands as a real column a workflow can branch on, not as a pending field.",
+      "slug": "appointment_request",
+      "name": "Appointment request",
+      "description": "Appointment requests from the booking funnel, and feedback from the review flow. One type on purpose: a shop works one board, and `source` (booking_funnel, feedback, phone, walk_in) separates the rows so feedback never counts as a lead. Splitting them would mean a second type to provision and a second board to explain on every onboarding. Public-ingestable; links to a Person by email/phone. Every field the site posts is declared here so it lands as a real column a workflow can branch on, not as a pending field.",
       "icon": "Wrench",
       "color": "#C8102E",
       "isPublicIngestable": true,
