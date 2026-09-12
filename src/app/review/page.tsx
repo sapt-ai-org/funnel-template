@@ -1,7 +1,10 @@
 'use client'
 
-import { useState } from 'react'
+import { LegalLinks } from '@/components/site/LegalLinks'
+import { buttonClass } from '@/components/site/button'
 import { business, reviewGate } from '@/config/business'
+import clsx from 'clsx'
+import { useState } from 'react'
 
 /**
  * The review flow.
@@ -15,6 +18,9 @@ import { business, reviewGate } from '@/config/business'
  * branch in here — see the note on that config for what the threshold means
  * and why it is a single number.
  */
+
+const FIELD = 'h-14 w-full rounded-md border-[1.5px] border-border bg-surface px-4 text-lg outline-none transition-colors placeholder:text-text-light focus:border-text focus-visible:outline-none'
+
 export default function ReviewPage() {
   const [rating, setRating] = useState<number | null>(null)
   const [hover, setHover] = useState<number | null>(null)
@@ -53,84 +59,92 @@ export default function ReviewPage() {
   }
 
   return (
-    <main className="mx-auto flex min-h-[100svh] w-full max-w-lg flex-col justify-center px-6 py-14">
-      {sent ? (
-        <div className="text-center">
-          <h1 className="text-3xl font-semibold tracking-tight">Thank you.</h1>
-          <p className="mt-3 text-neutral-600">
-            {business.name} has your note and the owner will reach out personally.
-          </p>
-        </div>
-      ) : rating !== null && rating < reviewGate.minStarsToGoogle ? (
-        <div>
-          <h1 className="text-3xl font-semibold tracking-tight">What went wrong?</h1>
-          <p className="mt-3 text-neutral-600">
-            This goes straight to the owner. We would rather fix it than leave it.
-          </p>
+    <main className="min-h-[100svh] bg-bg">
+      <div className="mx-auto flex min-h-[100svh] w-full max-w-lg flex-col px-5 pt-8 pb-14">
+        <p className="font-display text-xl font-bold uppercase tracking-[0.02em]">{business.name}</p>
 
-          <form onSubmit={submitFeedback} className="mt-7 grid gap-4">
-            <input
-              required
-              placeholder="Your name"
-              value={form.name}
-              onChange={(e) => setForm({ ...form, name: e.target.value })}
-              className="rounded-xl border border-neutral-300 px-4 py-3.5 text-base outline-none focus:border-neutral-900"
-            />
-            <input
-              required
-              type="tel"
-              placeholder="Phone"
-              value={form.phone}
-              onChange={(e) => setForm({ ...form, phone: e.target.value })}
-              className="rounded-xl border border-neutral-300 px-4 py-3.5 text-base outline-none focus:border-neutral-900"
-            />
-            <textarea
-              required
-              rows={5}
-              placeholder="What happened?"
-              value={form.comments}
-              onChange={(e) => setForm({ ...form, comments: e.target.value })}
-              className="rounded-xl border border-neutral-300 px-4 py-3.5 text-base outline-none focus:border-neutral-900"
-            />
-            <button
-              type="submit"
-              disabled={busy}
-              className="rounded-xl bg-neutral-900 px-6 py-4 text-base font-semibold text-white disabled:opacity-60"
-            >
-              {busy ? 'Sending…' : 'Send to the owner'}
-            </button>
-          </form>
-        </div>
-      ) : (
-        <div className="text-center">
-          <h1 className="text-3xl font-semibold tracking-tight">How did we do?</h1>
-          <p className="mt-3 text-neutral-600">Tap a star. It takes a second.</p>
+        <div className="flex flex-1 flex-col justify-center py-10">
+          {sent ? (
+            <div>
+              <h1 className="font-display text-5xl font-bold leading-[0.95]">Thank you.</h1>
+              <p className="mt-4 text-lg text-text-muted">
+                The owner has your note and will reach out personally.
+              </p>
+            </div>
+          ) : rating !== null && rating < reviewGate.minStarsToGoogle ? (
+            <div>
+              <h1 className="font-display text-5xl font-bold leading-[0.95]">What went wrong?</h1>
+              <p className="mt-4 text-lg text-text-muted">
+                This goes straight to the owner. We would rather fix it than leave it.
+              </p>
 
-          <div className="mt-9 flex justify-center gap-2" onMouseLeave={() => setHover(null)}>
-            {[1, 2, 3, 4, 5].map((n) => (
-              <button
-                key={n}
-                type="button"
-                aria-label={`${n} star${n > 1 ? 's' : ''}`}
-                onMouseEnter={() => setHover(n)}
-                onClick={() => choose(n)}
-                className="p-1 transition-transform hover:scale-110"
-              >
-                <svg viewBox="0 0 24 24" className="h-12 w-12" fill={n <= shown ? '#FBBC04' : '#E5E5E5'}>
-                  <path d="M12 2l2.9 6.3 6.6.7-4.9 4.4 1.4 6.6L12 16.6 6 20l1.4-6.6L2.5 9l6.6-.7z" />
-                </svg>
-              </button>
-            ))}
-          </div>
+              <form onSubmit={submitFeedback} className="mt-8 grid gap-3">
+                <input
+                  required
+                  aria-label="Your name"
+                  autoComplete="name"
+                  placeholder="Your name"
+                  value={form.name}
+                  onChange={(e) => setForm({ ...form, name: e.target.value })}
+                  className={FIELD}
+                />
+                <input
+                  required
+                  type="tel"
+                  aria-label="Phone"
+                  autoComplete="tel"
+                  placeholder="Phone"
+                  value={form.phone}
+                  onChange={(e) => setForm({ ...form, phone: e.target.value })}
+                  className={FIELD}
+                />
+                <textarea
+                  required
+                  rows={5}
+                  aria-label="What happened?"
+                  placeholder="What happened?"
+                  value={form.comments}
+                  onChange={(e) => setForm({ ...form, comments: e.target.value })}
+                  className={clsx(FIELD, 'h-auto py-3.5')}
+                />
+                <button type="submit" disabled={busy} className={clsx(buttonClass({ block: true }), 'mt-2')}>
+                  {busy ? 'Sending…' : 'Send to the owner'}
+                </button>
+              </form>
+            </div>
+          ) : (
+            <div>
+              <h1 className="font-display text-5xl font-bold leading-[0.95] sm:text-6xl">How did we do?</h1>
+              <p className="mt-4 text-lg text-text-muted">Tap a star. It takes a second.</p>
 
-          {!business.reviewUrl ? (
-            <p className="mt-8 rounded-xl bg-amber-50 px-4 py-3 text-sm text-amber-900">
-              No Google review link configured yet. Run <code>pnpm pull-gbp</code> to fetch it
-              from the Business Profile.
-            </p>
-          ) : null}
+              <div className="mt-10 flex gap-1.5" onMouseLeave={() => setHover(null)}>
+                {[1, 2, 3, 4, 5].map((n) => (
+                  <button
+                    key={n}
+                    type="button"
+                    aria-label={`${n} star${n > 1 ? 's' : ''}`}
+                    onMouseEnter={() => setHover(n)}
+                    onClick={() => choose(n)}
+                    className="rounded-lg p-1"
+                  >
+                    <svg viewBox="0 0 24 24" className="h-14 w-14" fill={n <= shown ? '#FBBC04' : 'var(--border)'} aria-hidden>
+                      <path d="M12 2l2.9 6.3 6.6.7-4.9 4.4 1.4 6.6L12 16.6 6 20l1.4-6.6L2.5 9l6.6-.7z" />
+                    </svg>
+                  </button>
+                ))}
+              </div>
+
+              {!business.reviewUrl ? (
+                <p className="mt-10 rounded-md border-[1.5px] border-dashed border-border px-4 py-3 text-[15px] text-text-muted">
+                  No Google review link yet. Run <code className="font-semibold text-text">pnpm pull-gbp</code> to
+                  fetch it from the Business Profile.
+                </p>
+              ) : null}
+            </div>
+          )}
         </div>
-      )}
+        <LegalLinks className="flex flex-wrap gap-x-5 gap-y-2 text-sm text-text-muted" linkClassName="underline-offset-4 hover:text-text hover:underline" />
+      </div>
     </main>
   )
 }

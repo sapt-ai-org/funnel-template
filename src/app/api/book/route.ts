@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { getSaptServerConfig, isSaptConfigured } from '@/lib/sapt-config'
+import { bookingExternalId, leadTracking, promotedAnswers, validateBooking } from '@/lib/booking'
 import { ingestObject } from '@/lib/sapt-server'
 
 /**
@@ -12,6 +13,14 @@ import { ingestObject } from '@/lib/sapt-server'
  * before this works. Create it once (one call on the Sapt MCP, or by hand — see
  * SAPT_SETUP_GUIDE.md). Until then this returns a clear error so you know to set
  * it up, rather than silently dropping the booking.
+ *
+ * ONE EVENT ID PER BOOKING. The browser mints `leadEventId` once per
+ * submission; it goes to Sapt as `tracking.lead.eventId`, Sapt uses it for the
+ * Lead it reports to Meta from the server, and it comes back as
+ * `conversionEventId`, the only id the browser's Pixel Lead may fire with. The
+ * same string on both sides is what stops Meta counting every booking twice.
+ * `held` means Sapt withheld the booking (spam, or not qualified) and sends
+ * no Lead, so the Pixel must not either. See src/lib/meta-pixel.ts.
  */
 
 interface BookingBody {
@@ -26,17 +35,11 @@ interface BookingBody {
   answers?: Record<string, unknown> // funnel step answers, keyed by step id
   visitorId?: string
   utm?: Record<string, string>
+  /** Minted once per submission by the browser; see above. */
+  leadEventId?: string
 }
 
 export async function POST(request: Request) {
-  if (!isSaptConfigured()) {
-    // Template not wired to a project yet (e.g. local/demo). Don't show the
-    // visitor a raw error — complete the funnel gracefully. The lead is NOT
-    // saved; set NEXT_PUBLIC_SAPT_PROJECT_ID to enable real capture.
-    console.warn('[/api/book] Sapt not configured — returning demo success (lead not saved).')
-    return NextResponse.json({ ok: true, demo: true })
-  }
-
   let body: BookingBody
   try {
     body = (await request.json()) as BookingBody
@@ -44,28 +47,39 @@ export async function POST(request: Request) {
     return NextResponse.json({ ok: false, error: 'Invalid JSON' }, { status: 400 })
   }
 
-  const email = body.email?.trim()
-  const name = body.name?.trim()
-  if (!email || !name) {
-    return NextResponse.json(
-      { ok: false, error: 'Name and email are required.' },
-      { status: 400 }
-    )
+  const tracking = leadTracking({
+    leadEventId: body.leadEventId,
+    visitorId: body.visitorId,
+    referer: request.headers.get('referer'),
+    userAgent: request.headers.get('user-agent'),
+  })
+
+  if (!isSaptConfigured()) {
+    // Template not wired to a project yet (e.g. local/demo). Don't show the
+    // visitor a raw error — complete the funnel gracefully. The lead is NOT
+    // saved; set NEXT_PUBLIC_SAPT_PROJECT_ID to enable real capture.
+    console.warn('[/api/book] Sapt not configured — returning demo success (lead not saved).')
+    return NextResponse.json({ ok: true, demo: true, held: false, conversionEventId: tracking.lead.eventId })
   }
+
+  // A name and a phone number: a shop calls and texts, it does not email.
+  const check = validateBooking(body)
+  if (!check.ok) return NextResponse.json({ ok: false, error: check.error }, { status: 400 })
+  const { name, email, phone } = check
 
   const { bookingTypeSlug } = getSaptServerConfig()
   const booking = await ingestObject(bookingTypeSlug, {
-    externalId: `booking:${email}:${body.date ?? ''}:${body.time ?? ''}`,
+    externalId: bookingExternalId(check.phoneDigits),
+    tracking,
     data: {
       name,
-      email,
-      phone: body.phone,
+      ...(email ? { email } : {}),
+      phone,
       service: body.serviceName || body.service,
       // Promoted out of the answers blob: a shop filters its board by what is
-      // wrong with the car and how soon it needs to be in, and a workflow
-      // cannot branch on a field buried in JSON.
-      ...(typeof body.answers?.issue === 'string' ? { issue: body.answers.issue } : {}),
-      ...(typeof body.answers?.timing === 'string' ? { timing: body.answers.timing } : {}),
+      // wrong with the car and how soon it needs to be in, reads what they
+      // wrote under Other, and a workflow cannot branch on JSON.
+      ...promotedAnswers(body.answers),
       ...(body.vehicle ? { vehicle: body.vehicle } : {}),
       preferredDate: body.date,
       preferredTime: body.time,
@@ -84,15 +98,22 @@ export async function POST(request: Request) {
 
   if (!booking.ok) {
     // Most common cause: the `booking` type hasn't been created (or isn't
-    // publicly ingestable) yet. See SAPT_SETUP_GUIDE.md, section 4.
+    // publicly ingestable) yet. See SAPT_SETUP_GUIDE.md, section 4. The detail
+    // is for the logs; the customer gets a plain sentence and the phone.
     console.warn(
-      `[/api/book] CRM record failed (type "${bookingTypeSlug}"): ${booking.error}`
+      `[/api/book] CRM record failed (type "${bookingTypeSlug}"): ${JSON.stringify(booking.error)}`
     )
     return NextResponse.json(
-      { ok: false, error: booking.error ?? 'Could not save your booking.' },
+      { ok: false, error: 'That did not go through on our end. Please call the shop and we will book you in.' },
       { status: 502 }
     )
   }
 
-  return NextResponse.json({ ok: true, bookingId: booking.data?.recordId ?? null })
+  // A held booking looks exactly like any other to the visitor; only the Pixel is told.
+  return NextResponse.json({
+    ok: true,
+    bookingId: booking.data?.recordId ?? null,
+    held: booking.data?.held === true,
+    conversionEventId: booking.data?.held ? null : (booking.data?.conversionEventId ?? null),
+  })
 }

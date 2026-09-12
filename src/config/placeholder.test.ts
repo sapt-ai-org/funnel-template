@@ -26,10 +26,6 @@ describe('template ships no real client data', () => {
     expect(landingCopy(landingSpec)).not.toMatch(PHONE_PATTERN)
   })
 
-  it('uses a reserved fictional phone on the success screen', () => {
-    expect(landingSpec.funnel.success.phone).toMatch(FICTIONAL_PHONE)
-  })
-
   it('uses a reserved fictional phone on the business profile', () => {
     expect(business.phone).toMatch(FICTIONAL_PHONE)
   })
@@ -48,6 +44,12 @@ describe('template ships no real client data', () => {
     // The setup checklist keys off this. If it ever returns false on a fresh
     // clone, a client will be told their site is ready when it is not.
     expect(isPlaceholder()).toBe(true)
+  })
+
+  it('ships no reviews: the page shows tagged samples until Google provides real ones', () => {
+    // A review on a live site that no customer wrote is a fake review. The
+    // template carries none; samples render only while the demo name stands.
+    expect(business.reviews).toEqual([])
   })
 
   it('carries no Google Business Profile identifiers', () => {

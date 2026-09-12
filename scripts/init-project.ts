@@ -8,8 +8,9 @@
  *      given, a custom route).
  *   2. Removes the handful of files that exist only to guard the template
  *      itself and have no business in a client repo.
- *   3. Stamps the client's real colors, fonts, logo, and brand name into the
- *      checkout, replacing the template's placeholder defaults.
+ *   3. Stamps the client's real colors (src/config/design.ts), fonts
+ *      (src/config/fonts.ts), logo, and brand name into the checkout,
+ *      replacing the template's placeholder defaults.
  *
  * There is one template. The multi-template gallery and its TEMPLATE_ID
  * selection were removed: a shop site and a clinic site differ by content and
@@ -28,9 +29,12 @@
  */
 
 import fs from 'fs'
+import { createRequire } from 'module'
 import path from 'path'
+import { isHex } from '../src/lib/color'
 
-const GLOBALS_CSS_PATH = 'src/app/globals.css'
+const DESIGN_CONFIG_PATH = 'src/config/design.ts'
+const FONTS_CONFIG_PATH = 'src/config/fonts.ts'
 const FUNNEL_CONFIG_PATH = 'src/config/funnel.ts'
 const PUBLIC_DIR = 'public'
 
@@ -40,25 +44,50 @@ const TEMPLATE_ONLY_PATHS = [
   'src/config/placeholder.test.ts',
 ]
 
+/**
+ * The Worker config for one client: the template's wrangler.jsonc with the
+ * client's names. The cache bindings are the ones open-next.config.ts reads,
+ * and WORKER_SELF_REFERENCE must name the Worker itself, so both come from
+ * the one `workerName`.
+ */
+export function wranglerConfig(
+  workerName: string,
+  route?: { pattern: string; zoneId: string }
+): Record<string, unknown> {
+  return {
+    $schema: 'node_modules/wrangler/config-schema.json',
+    name: workerName,
+    main: '.open-next/worker.js',
+    compatibility_date: '2026-08-01',
+    compatibility_flags: ['nodejs_compat', 'global_fetch_strictly_public'],
+    build: { command: 'pnpm exec opennextjs-cloudflare build' },
+    assets: { directory: '.open-next/assets', binding: 'ASSETS' },
+    observability: { enabled: true },
+    services: [{ binding: 'WORKER_SELF_REFERENCE', service: workerName }],
+    // R2 names stop at 63 characters, six fewer than a Worker name leaves room for.
+    r2_buckets: [{ binding: 'NEXT_INC_CACHE_R2_BUCKET', bucket_name: `${workerName.slice(0, 57).replace(/-+$/, '')}-cache` }],
+    durable_objects: {
+      bindings: [
+        { name: 'NEXT_CACHE_DO_QUEUE', class_name: 'DOQueueHandler' },
+        { name: 'NEXT_TAG_CACHE_DO_SHARDED', class_name: 'DOShardedTagCache' },
+      ],
+    },
+    migrations: [{ tag: 'v1', new_sqlite_classes: ['DOQueueHandler', 'DOShardedTagCache'] }],
+    ...(route ? { routes: [{ pattern: route.pattern, zone_id: route.zoneId }] } : {}),
+  }
+}
+
 function writeWrangler(root: string, projectSlug: string): void {
   const routePattern = process.env.ROUTE_PATTERN
   const routeZoneId = process.env.ROUTE_ZONE_ID
+  const workerName = `${projectSlug}-landing`
+  const config = wranglerConfig(
+    workerName,
+    routePattern && routeZoneId ? { pattern: routePattern, zoneId: routeZoneId } : undefined
+  )
 
-  const wranglerConfig: Record<string, unknown> = {
-    $schema: 'node_modules/wrangler/config-schema.json',
-    name: `${projectSlug}-landing`,
-    main: '.open-next/worker.js',
-    compatibility_date: '2025-03-01',
-    compatibility_flags: ['nodejs_compat', 'global_fetch_strictly_public'],
-    assets: { directory: '.open-next/assets', binding: 'ASSETS' },
-  }
-
-  if (routePattern && routeZoneId) {
-    wranglerConfig.routes = [{ pattern: routePattern, zone_id: routeZoneId }]
-  }
-
-  fs.writeFileSync(path.join(root, 'wrangler.jsonc'), JSON.stringify(wranglerConfig, null, 2))
-  console.log(`Generated wrangler.jsonc for "${projectSlug}-landing"`)
+  fs.writeFileSync(path.join(root, 'wrangler.jsonc'), JSON.stringify(config, null, 2))
+  console.log(`Generated wrangler.jsonc for "${workerName}"`)
 }
 
 /* ════════════════════════════════════════════════════════════════════════════
@@ -86,91 +115,8 @@ interface BrandingPayload {
   logo?: { url: string; alt?: string }
 }
 
-/** Ratios the ramp is generated with — derived from the original hand-picked ramp. */
-const RAMP_MIX: Record<number, { toward: 'white' | 'black'; amount: number } | null> = {
-  50: { toward: 'white', amount: 0.92 },
-  100: { toward: 'white', amount: 0.85 },
-  200: { toward: 'white', amount: 0.7 },
-  300: { toward: 'white', amount: 0.5 },
-  400: { toward: 'white', amount: 0.25 },
-  500: null, // the base hex itself
-  600: { toward: 'black', amount: 0.12 },
-  700: { toward: 'black', amount: 0.25 },
-  800: { toward: 'black', amount: 0.42 },
-  900: { toward: 'black', amount: 0.55 },
-}
-
-const PRIMARY_STEPS = [50, 100, 200, 300, 400, 500, 600, 700, 800, 900]
-const ACCENT_STEPS = [50, 100, 200, 300, 400, 500, 600]
-
-function parseHex(hex: string): { r: number; g: number; b: number } {
-  const normalized = hex.trim().replace(/^#/, '')
-  if (!/^[0-9a-fA-F]{6}$/.test(normalized)) {
-    throw new Error(`Invalid hex color "${hex}"`)
-  }
-  return {
-    r: parseInt(normalized.slice(0, 2), 16),
-    g: parseInt(normalized.slice(2, 4), 16),
-    b: parseInt(normalized.slice(4, 6), 16),
-  }
-}
-
-function toHex(r: number, g: number, b: number): string {
-  const clamp = (n: number) => Math.max(0, Math.min(255, Math.round(n)))
-  const part = (n: number) => clamp(n).toString(16).padStart(2, '0')
-  return `#${part(r)}${part(g)}${part(b)}`.toUpperCase()
-}
-
-/** Mixes `hex` toward white or black by `amount` (0 = unchanged, 1 = fully `toward`). */
-export function mixHex(hex: string, toward: 'white' | 'black', amount: number): string {
-  const target = toward === 'white' ? 255 : 0
-  const { r, g, b } = parseHex(hex)
-  const mix = (c: number) => c + (target - c) * amount
-  return toHex(mix(r), mix(g), mix(b))
-}
-
-/** Builds a shade ramp for `hex` at the requested `steps`, using the shared mix ratios. */
-export function buildRamp(hex: string, steps: number[]): Record<number, string> {
-  const ramp: Record<number, string> = {}
-  for (const step of steps) {
-    const rule = RAMP_MIX[step]
-    ramp[step] = rule ? mixHex(hex, rule.toward, rule.amount) : hex
-  }
-  return ramp
-}
-
 function escapeRegExp(value: string): string {
   return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
-}
-
-/**
- * Replaces the value of an existing `--varName: …;` CSS declaration, leaving
- * anything after the semicolon (e.g. a trailing comment) untouched. Throws
- * rather than no-opping when the variable doesn't exist, consistent with
- * `rewriteLandingImport` — silently keeping a stale value is the worst outcome.
- */
-export function setCssVar(source: string, varName: string, value: string): string {
-  const pattern = new RegExp(`(--${escapeRegExp(varName)}\\s*:\\s*)([^;]+)(;)`)
-  if (!pattern.test(source)) {
-    throw new Error(`CSS variable "--${varName}" not found`)
-  }
-  return source.replace(pattern, (_match, prefix: string, _old: string, suffix: string) =>
-    `${prefix}${value}${suffix}`
-  )
-}
-
-function getCssVarValue(source: string, varName: string): string {
-  const pattern = new RegExp(`--${escapeRegExp(varName)}\\s*:\\s*([^;]+);`)
-  const match = source.match(pattern)
-  if (!match) {
-    throw new Error(`CSS variable "--${varName}" not found`)
-  }
-  return match[1].trim()
-}
-
-/** Replaces only the leading quoted family name in a font-stack value, keeping the fallback chain. */
-function replaceLeadingFontFamily(value: string, family: string): string {
-  return value.replace(/^'[^']*'/, `'${family}'`)
 }
 
 /**
@@ -228,59 +174,119 @@ function parseBranding(json: string): BrandingPayload | null {
   }
 }
 
-function applyColors(css: string, colors: BrandingColor[]): string {
-  let result = css
-  const primary = colors.find((c) => c.purpose === 'primary')
-  const accent =
-    colors.find((c) => c.purpose === 'accent') ?? colors.find((c) => c.purpose === 'secondary')
-  const background = colors.find((c) => c.purpose === 'background')
-  const text = colors.find((c) => c.purpose === 'text')
-
-  if (primary) {
-    const ramp = buildRamp(primary.hex, PRIMARY_STEPS)
-    for (const step of PRIMARY_STEPS) result = setCssVar(result, `color-primary-${step}`, ramp[step])
+/**
+ * The client's colours, into src/config/design.ts: the primary colour becomes
+ * `brand` (the site generates its light-to-dark ramp from it), the background
+ * `paper` and the text colour `ink`. The secondary colour has nowhere to go:
+ * the site spends colour on actions only. A value that is not a six-digit hex
+ * is skipped and the template's colour kept.
+ */
+export function applyColors(designSource: string, colors: BrandingColor[]): string {
+  const pick = (purpose: BrandingColor['purpose']) => colors.find((c) => c.purpose === purpose)?.hex
+  let result = designSource
+  for (const [key, hex] of [
+    ['brand', pick('primary')],
+    ['paper', pick('background')],
+    ['ink', pick('text')],
+  ] as const) {
+    if (!hex) continue
+    if (!isHex(hex)) {
+      console.warn(`init-project: "${hex}" is not a hex colour, keeping the template's ${key}`)
+      continue
+    }
+    result = setSpecString(result, key, `#${hex.trim().replace(/^#/, '').toUpperCase()}`)
   }
-  if (accent) {
-    const ramp = buildRamp(accent.hex, ACCENT_STEPS)
-    for (const step of ACCENT_STEPS) result = setCssVar(result, `color-accent-${step}`, ramp[step])
-  }
-  if (background) result = setCssVar(result, 'bg', background.hex)
-  if (text) result = setCssVar(result, 'text', text.hex)
-
   return result
 }
 
-function googleFontImportLine(font: BrandingFont): string {
-  const family = (font.googleFontFamily ?? '').trim().replace(/\s+/g, '+')
-  const weights = font.weights?.length ? `:wght@${font.weights.join(';')}` : ''
-  return `@import url('https://fonts.googleapis.com/css2?family=${family}${weights}&display=swap');`
+/** One face as src/config/fonts.ts loads it: a Google family, and its weights (null for a variable font). */
+export interface FontFace {
+  family: string
+  weights: string[] | null
 }
 
-function applyFonts(css: string, fonts: BrandingFont[]): string {
-  let result = css
-  const primaryFont = fonts.find((f) => f.type === 'primary')
-  const displayFont = fonts.find((f) => f.type === 'secondary') ?? primaryFont
+/** The template's faces, as src/config/fonts.ts ships. */
+export const DEFAULT_FONTS: { body: FontFace; display: FontFace } = {
+  body: { family: 'Barlow', weights: ['400', '500', '600'] },
+  display: { family: 'Barlow Condensed', weights: ['600', '700'] },
+}
 
-  if (primaryFont) {
-    const current = getCssVarValue(result, 'font-sans')
-    result = setCssVar(result, 'font-sans', replaceLeadingFontFamily(current, primaryFont.name))
-  }
-  if (displayFont) {
-    const current = getCssVarValue(result, 'font-display')
-    result = setCssVar(result, 'font-display', replaceLeadingFontFamily(current, displayFont.name))
-  }
+/** The weights each face is set in across the site. */
+const ROLE_WEIGHTS = { body: [400, 500, 600], display: [600, 700] }
 
-  const importLines = fonts
-    .filter((f) => f.source === 'google' && f.googleFontFamily)
-    .map(googleFontImportLine)
-  if (importLines.length > 0) {
-    result = result.replace(
-      "@import 'tailwindcss';",
-      `@import 'tailwindcss';\n${importLines.join('\n')}`
-    )
-  }
+type FontCatalog = Record<string, { weights: string[]; subsets: string[] }>
 
-  return result
+/**
+ * next/font's own list of Google families. It fails the build on a family it
+ * does not know, so a brand font is only written when it is in here.
+ */
+export function loadFontCatalog(root: string): FontCatalog | null {
+  try {
+    return createRequire(path.join(root, 'package.json'))(
+      'next/dist/compiled/@next/font/dist/google/font-data.json'
+    ) as FontCatalog
+  } catch {
+    return null
+  }
+}
+
+/** `family` in the weights `role` needs (the nearest it has), or null when next/font cannot load it. */
+export function resolveFont(family: string, role: keyof typeof ROLE_WEIGHTS, catalog: FontCatalog): FontFace | null {
+  const entry = catalog[family]
+  if (!entry || !entry.subsets.includes('latin')) return null
+  if (entry.weights.includes('variable')) return { family, weights: null }
+  const available = entry.weights.map(Number).filter((w) => Number.isFinite(w))
+  if (!available.length) return null
+  const nearest = (want: number) => available.reduce((a, b) => (Math.abs(b - want) < Math.abs(a - want) ? b : a))
+  return { family, weights: [...new Set(ROLE_WEIGHTS[role].map(nearest))].sort((a, b) => a - b).map(String) }
+}
+
+/** A family's export name in next/font/google: "Barlow Condensed" is Barlow_Condensed. */
+const fontExport = (family: string) => family.trim().replace(/[^A-Za-z0-9]+/g, '_')
+
+/** The body of src/config/fonts.ts for two faces: everything from the import down. */
+function fontsModuleBody(body: FontFace, display: FontFace): string {
+  const call = (name: string, face: FontFace, variable: string) =>
+    [
+      `export const ${name} = ${fontExport(face.family)}({`,
+      `  subsets: ['latin'],`,
+      ...(face.weights ? [`  weight: [${face.weights.map((w) => `'${w}'`).join(', ')}],`] : []),
+      `  variable: '${variable}',`,
+      `  display: 'swap',`,
+      `})`,
+    ].join('\n')
+  const imports = [...new Set([fontExport(body.family), fontExport(display.family)])].join(', ')
+  return [
+    `import { ${imports} } from 'next/font/google'`,
+    call('bodyFont', body, '--font-body'),
+    call('displayFont', display, '--font-heading'),
+  ].join('\n\n') + '\n'
+}
+
+/**
+ * The client's fonts, into src/config/fonts.ts: the primary font becomes the
+ * body face and the secondary one (or the primary again) the display face.
+ * Self-hosted by next/font like the template's own, so a brand font costs no
+ * request to Google. A family next/font cannot load keeps the template's
+ * face for that role. The file's header comment is kept as it is.
+ */
+export function applyFonts(fontsSource: string, fonts: BrandingFont[], catalog: FontCatalog | null): string {
+  const primary = fonts.find((f) => f.type === 'primary')
+  const secondary = fonts.find((f) => f.type === 'secondary') ?? primary
+  const face = (font: BrandingFont | undefined, role: keyof typeof ROLE_WEIGHTS): FontFace | null => {
+    const family = (font?.googleFontFamily || font?.name || '').trim()
+    if (!family) return null
+    const resolved = catalog ? resolveFont(family, role, catalog) : null
+    if (!resolved) console.warn(`init-project: next/font cannot load "${family}", keeping the template's ${role} face`)
+    return resolved
+  }
+  const body = face(primary, 'body')
+  const display = face(secondary, 'display')
+  if (!body && !display) return fontsSource
+
+  const start = fontsSource.indexOf("import {")
+  if (start === -1) throw new Error('No font import found in fonts.ts')
+  return fontsSource.slice(0, start) + fontsModuleBody(body ?? DEFAULT_FONTS.body, display ?? DEFAULT_FONTS.display)
 }
 
 const LOGO_EXTENSIONS = ['svg', 'png', 'jpg', 'webp'] as const
@@ -328,11 +334,11 @@ async function downloadLogo(root: string, url: string): Promise<{ src: string } 
 }
 
 async function applyBranding(root: string, branding: BrandingPayload): Promise<void> {
-  const cssPath = path.join(root, GLOBALS_CSS_PATH)
-  let css = fs.readFileSync(cssPath, 'utf8')
-  css = applyColors(css, branding.colors)
-  css = applyFonts(css, branding.fonts)
-  fs.writeFileSync(cssPath, css)
+  const designPath = path.join(root, DESIGN_CONFIG_PATH)
+  fs.writeFileSync(designPath, applyColors(fs.readFileSync(designPath, 'utf8'), branding.colors))
+
+  const fontsPath = path.join(root, FONTS_CONFIG_PATH)
+  fs.writeFileSync(fontsPath, applyFonts(fs.readFileSync(fontsPath, 'utf8'), branding.fonts, loadFontCatalog(root)))
 
   const funnelPath = path.join(root, FUNNEL_CONFIG_PATH)
   let funnel = fs.readFileSync(funnelPath, 'utf8')

@@ -1,31 +1,36 @@
+import { isTemplate } from '../config/business'
+
 /**
- * Image slots.
+ * The shop's photographs.
  *
- * A local service site lives or dies on photographs: a shop owner's own bay,
- * his own techs, his own sign. Stock photography of a generic garage reads as
- * a template instantly, and every competitor's template uses the same three
- * shots. So this file defines NAMED SLOTS rather than a bag of images, and
- * every slot has a real caption describing the photo that belongs in it.
- *
- * Unfilled slots render a labelled placeholder at the right aspect ratio, so
- * an un-photographed site still lays out correctly and it is obvious to
- * everyone, including the client, exactly which photo is missing.
+ * A local service site lives or dies on photographs: the owner's own bay, the
+ * techs, the sign out front. Stock photography of a generic garage reads as a
+ * template instantly. So this file defines NAMED SLOTS rather than a bag of
+ * images, each with a brief saying what belongs in it.
  *
  * `pnpm pull-gbp` fills what it can from the Google Business Profile: Google
- * already holds the owner's exterior, interior and team shots, and those are
- * the same photos customers see on Maps, so the site matches the listing. It
- * downloads them into `public/photos/` and rewrites everything between the
- * `pull-gbp:begin slots` and `pull-gbp:end slots` markers below.
+ * already holds the shop's exterior, interior and team shots, the same photos
+ * customers see on Maps. It downloads them into `public/photos/` and rewrites
+ * everything between the `pull-gbp:begin slots` and `pull-gbp:end slots`
+ * markers below. The owner portrait is never filled automatically.
+ *
+ * What a slot renders, in order:
+ *   1. the shop's own photo, when the slot has one
+ *   2. on the untouched template, a sample photo, tagged "Sample" on the page
+ *   3. in development, a labelled "Photo needed" box, so whoever is setting
+ *      the site up sees exactly what is missing and where
+ *   4. in production, nothing: the section closes up around it. A live site
+ *      never shows a placeholder.
  */
 
 export type SlotId =
-  | 'hero'
+  | 'storefront'
   | 'exterior'
-  | 'interior'
+  | 'owner'
   | 'team'
+  | 'interior'
   | 'bay'
   | 'detail'
-  | 'owner'
   | 'gallery1'
   | 'gallery2'
   | 'gallery3'
@@ -33,97 +38,165 @@ export type SlotId =
 
 export interface ImageSlot {
   id: SlotId
-  /** What photo goes here. Shown on the placeholder, so the client can read it. */
+  /** What photo belongs here. Shown on the development placeholder. */
   brief: string
-  /** width / height. Drives the placeholder box and prevents layout shift. */
+  /** width / height of the photo's box where nothing else sets one. */
   ratio: number
-  /** Filled by pull-gbp or by hand. Empty = render the placeholder. */
+  /** Filled by pull-gbp or by hand, e.g. '/photos/bay.jpg'. */
   src?: string
-  /** Alt text. Real alt text is an SEO and accessibility requirement, not a nicety. */
+  /** Real alt text. Required with `src`: it is both accessibility and a ranking signal. */
   alt?: string
 }
 
 // pull-gbp:begin slots
 export const SLOTS: Record<SlotId, ImageSlot> = {
-  hero: { id: 'hero', brief: 'Wide shot of the shop front, daylight, sign visible', ratio: 16 / 9 },
-  exterior: { id: 'exterior', brief: 'Building exterior from the street', ratio: 4 / 3 },
-  interior: { id: 'interior', brief: 'Clean shop floor, lifts in frame', ratio: 4 / 3 },
-  team: { id: 'team', brief: 'The techs, together, in uniform', ratio: 3 / 2 },
+  storefront: { id: 'storefront', brief: 'The shop front in daylight, sign and bay doors in frame', ratio: 4 / 3 },
+  exterior: { id: 'exterior', brief: 'The building from the street or the lot', ratio: 4 / 3 },
+  owner: { id: 'owner', brief: 'The owner, waist up, in the shop', ratio: 4 / 5 },
+  team: { id: 'team', brief: 'The technicians together, in work clothes', ratio: 3 / 2 },
+  interior: { id: 'interior', brief: 'The shop floor, wide, lifts in frame', ratio: 16 / 9 },
   bay: { id: 'bay', brief: 'A car up on the lift, work in progress', ratio: 4 / 3 },
-  detail: { id: 'detail', brief: 'Close up: hands, tools, a torque wrench', ratio: 1 },
-  owner: { id: 'owner', brief: 'The owner, head and shoulders, in the shop', ratio: 1 },
-  gallery1: { id: 'gallery1', brief: 'Gallery: waiting area', ratio: 1 },
-  gallery2: { id: 'gallery2', brief: 'Gallery: diagnostic equipment', ratio: 1 },
-  gallery3: { id: 'gallery3', brief: 'Gallery: a finished job', ratio: 1 },
-  gallery4: { id: 'gallery4', brief: 'Gallery: the sign or street view', ratio: 1 },
+  detail: { id: 'detail', brief: 'Close up: hands and tools on the work', ratio: 1 },
+  gallery1: { id: 'gallery1', brief: 'A technician at a car with a diagnostic scanner', ratio: 4 / 3 },
+  gallery2: { id: 'gallery2', brief: 'Tire or wheel work: mounting, balancing, alignment', ratio: 4 / 3 },
+  gallery3: { id: 'gallery3', brief: 'Brake work up close: rotor, caliper, pads', ratio: 4 / 3 },
+  gallery4: { id: 'gallery4', brief: 'The waiting area or the service counter', ratio: 4 / 3 },
 }
 // pull-gbp:end slots
 
 /**
- * An inline SVG placeholder carrying its own brief.
- *
- * A data URI rather than a file so an empty slot costs no request and cannot
- * 404, and so a fresh clone with no photos at all still renders a complete
- * page. The diagonal hatch makes it unmistakably a placeholder at a glance —
- * a plain grey box gets mistaken for a design choice and ships.
+ * Photos the untouched template shows, so the layout can be judged full.
+ * Unsplash and Pexels licensed (credits in public/samples/CREDITS.md); every
+ * one is tagged "Sample" on the page and none can render after the first
+ * `pull-gbp`, which replaces the demo name `isTemplate()` checks.
  */
-export function placeholderSrc(slot: ImageSlot, options: { withLabel?: boolean } = {}): string {
-  // A slot that is stretched to fill a box (the hero) crops to a shape this
-  // SVG cannot know, so its centred label lands wherever the crop puts it,
-  // which on a phone is directly behind the headline. Those callers suppress
-  // the label and state the brief in the page instead.
-  const withLabel = options.withLabel ?? true
-  const w = 1200
-  const h = Math.round(w / slot.ratio)
-  // The SVG is always 1200 wide and scales down to whatever the slot gets, so
-  // the label has to be a fraction of the viewBox width rather than a fixed
-  // size. At a flat 30 it rendered around 8px in a three-across grid on a
-  // phone, which is the one place the brief most needs reading.
-  const label = Math.round(w * 0.045)
-  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}" viewBox="0 0 ${w} ${h}">
-  <defs>
-    <pattern id="h" width="16" height="16" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
-      <rect width="16" height="16" fill="#EEEDEA"/>
-      <line x1="0" y1="0" x2="0" y2="16" stroke="#E982624D" stroke-width="8"/>
-    </pattern>
-  </defs>
-  <rect width="${w}" height="${h}" fill="url(#h)"/>
-  <rect x="12" y="12" width="${w - 24}" height="${h - 24}" fill="none" stroke="#00000018" stroke-width="2"/>${
-    withLabel
-      ? `
-  <text x="50%" y="50%" text-anchor="middle" font-family="system-ui, sans-serif" font-size="${label}" fill="#6B6A66">PHOTO NEEDED</text>
-  <text x="50%" y="50%" dy="${Math.round(label * 1.25)}" text-anchor="middle" font-family="system-ui, sans-serif" font-size="${Math.round(label * 0.72)}" fill="#8E8D88">${escapeXml(slot.brief)}</text>`
-      : ''
-  }
-</svg>`
-  return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`
+const SAMPLE_PHOTOS: Partial<Record<SlotId, { alt: string }>> = {
+  storefront: { alt: 'A row of open service bays with cars inside, seen from the lot' },
+  owner: { alt: 'A mechanic in a work shirt, smiling, beside his tool cart' },
+  interior: { alt: 'A bright shop floor with an SUV raised on a lift' },
+  bay: { alt: 'A technician working under a car raised on a lift' },
+  detail: { alt: 'Gloved hands turning a socket wrench on an engine' },
+  gallery1: { alt: 'A technician checking an engine with a diagnostic tablet' },
+  gallery2: { alt: 'A tire being mounted on a tire changer' },
+  gallery3: { alt: 'Hands working at a brake rotor and caliper' },
 }
 
-function escapeXml(s: string): string {
-  return s.replace(/[<>&'"]/g, (c) =>
-    ({ '<': '&lt;', '>': '&gt;', '&': '&amp;', "'": '&apos;', '"': '&quot;' })[c] as string
-  )
+/** Widths every sample is exported at, so the browser picks the one it needs. */
+const SAMPLE_WIDTHS = [800, 1600] as const
+
+export interface ResolvedPhoto {
+  /** The slot it came from, or 'file' for a photo given by path (see filePhoto). */
+  id: SlotId | 'file'
+  src: string
+  srcSet?: string
+  alt: string
+  ratio: number
+  /** A template sample. The page tags it so nobody mistakes it for the shop. */
+  sample: boolean
+  /** Nothing to show: a development-only "Photo needed" box. */
+  placeholder: boolean
+  brief: string
 }
 
-/** The src to render for a slot, and whether it is still a placeholder. */
-export function image(
-  id: SlotId,
-  options: { withLabel?: boolean } = {}
-): { src: string; alt: string; brief: string; ratio: number; missing: boolean } {
+/** What a slot renders right now, or null when it should render nothing. */
+export function photo(id: SlotId): ResolvedPhoto | null {
   const slot = SLOTS[id]
-  const missing = !slot.src
-  return {
-    src: slot.src ?? placeholderSrc(slot, options),
-    brief: slot.brief,
-    // Falls back to the brief so alt text is never empty, which is both an
-    // accessibility failure and a wasted ranking signal on a local site.
-    alt: slot.alt ?? slot.brief,
-    ratio: slot.ratio,
-    missing,
+  const base = { id, ratio: slot.ratio, brief: slot.brief, sample: false, placeholder: false }
+
+  if (slot.src) return { ...base, src: slot.src, alt: slot.alt ?? slot.brief }
+
+  const sample = SAMPLE_PHOTOS[id]
+  if (sample && isTemplate()) {
+    const at = (w: number) => `/samples/${id}-${w}.webp`
+    return {
+      ...base,
+      src: at(SAMPLE_WIDTHS[SAMPLE_WIDTHS.length - 1]),
+      srcSet: SAMPLE_WIDTHS.map((w) => `${at(w)} ${w}w`).join(', '),
+      alt: sample.alt,
+      sample: true,
+    }
   }
+
+  if (process.env.NODE_ENV === 'development') return { ...base, src: '', alt: slot.brief, placeholder: true }
+  return null
 }
 
-/** Every slot still waiting on a photo. Surfaced in the setup checklist. */
+/** A photo given directly by path, for a custom section's one-off image. */
+export function filePhoto(src: string, alt: string, ratio = 4 / 3): ResolvedPhoto {
+  return { id: 'file', src, alt, ratio, sample: false, placeholder: false, brief: alt }
+}
+
+/** The first of several slots that has something to show: a fallback chain. */
+export function firstPhoto(ids: SlotId[]): ResolvedPhoto | null {
+  for (const id of ids) {
+    const p = photo(id)
+    if (p && !p.placeholder) return p
+  }
+  // Nothing real anywhere in the chain: the first slot's placeholder, if any.
+  return photo(ids[0])
+}
+
+/** Every slot in the list that has something to show, in order. */
+export function photos(ids: SlotId[]): ResolvedPhoto[] {
+  return ids.map(photo).filter((p): p is ResolvedPhoto => p !== null)
+}
+
+/* ── The photo plan: where each photo goes on the page ─────────────────────── */
+
+/**
+ * Each position on the page takes the first slot in its chain that has a
+ * photo, so a shop missing its owner portrait still gets a person in that
+ * spot, and a shop with a thin profile still gets a composed page. Every
+ * photo appears once: the gallery skips whatever the other positions used.
+ */
+export const PHOTO_PLAN = {
+  /** Behind the first screen, under a dark wash: the widest, calmest shot of the shop. */
+  hero: ['interior', 'storefront', 'bay'],
+  /** Beside the address and hours: what they will see when they pull up. Also the share image. */
+  storefront: ['storefront', 'exterior'],
+  /** The shop section: a person, ideally the owner. */
+  portrait: ['owner', 'team', 'interior'],
+  /** The bento, strongest first (the first tile is the largest). */
+  gallery: ['bay', 'detail', 'gallery1', 'team', 'interior', 'gallery2', 'gallery3', 'gallery4', 'exterior'],
+} as const satisfies Record<string, SlotId[]>
+
+/** The hero's background. Never a placeholder: with no photo the hero is plain. */
+export function heroPhoto(): ResolvedPhoto | null {
+  const p = firstPhoto([...PHOTO_PLAN.hero])
+  return p && !p.placeholder ? p : null
+}
+
+/** A position's chain, minus the slot the hero already took. */
+const afterHero = (chain: readonly SlotId[]): SlotId[] => {
+  const taken = heroPhoto()?.id
+  return chain.filter((id) => id !== taken)
+}
+
+export function storefrontPhoto(): ResolvedPhoto | null {
+  return firstPhoto(afterHero(PHOTO_PLAN.storefront))
+}
+
+export function portraitPhoto(): ResolvedPhoto | null {
+  return firstPhoto(afterHero(PHOTO_PLAN.portrait))
+}
+
+/**
+ * The gallery's photos, never the ones used elsewhere. In production only
+ * real ones (or template samples); in development the gaps show as labelled
+ * boxes too, so the bento can be seen at the size it is meant to be.
+ */
+export function galleryPhotos(max: number): ResolvedPhoto[] {
+  const used = new Set([heroPhoto()?.id, storefrontPhoto()?.id, portraitPhoto()?.id])
+  const available = photos([...PHOTO_PLAN.gallery]).filter((p) => !used.has(p.id))
+  const shown = available.filter((p) => !p.placeholder)
+  // The template's samples stand on their own; gaps are only worth showing
+  // on a real shop's site, where someone has a photo to go and get.
+  if (isTemplate()) return shown.slice(0, max)
+  // Real photos first, so a placeholder never takes the big first tile.
+  return [...shown, ...available.filter((p) => p.placeholder)].slice(0, max)
+}
+
+/** Every slot still waiting on the shop's own photo. Listed by pull-gbp. */
 export function missingSlots(): ImageSlot[] {
   return Object.values(SLOTS).filter((s) => !s.src)
 }

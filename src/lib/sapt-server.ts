@@ -1,13 +1,12 @@
 /**
  * Sapt server-side REST client (no SDK)
  *
- * Two plain `fetch` calls, imported ONLY from server code (route handlers and
- * server components):
+ * Imported ONLY from server code (route handlers and server components):
  *
  *   1. POST → CRM   — save a record to a CRM object type you created (booking).
  *                     Public: needs only the Project ID.
- *   2. GET  → CMS   — read explicitly published content by slug. Public and
- *                     credential-free; drafts remain behind Sapt auth.
+ *   2. The shape of a published CMS item. The reads themselves, and how they
+ *      are cached, live in `cms.ts`.
  *
  * Analytics is the third Sapt touchpoint and is a script tag, not a fetch —
  * see `src/components/Analytics.tsx`.
@@ -75,24 +74,44 @@ export interface IngestObjectInput {
   data?: Record<string, unknown>
   /** Optional idempotency key (unique per type). */
   externalId?: string
+  /**
+   * First-party tracking context Sapt keeps OUT of the record. `lead` decides
+   * whether Sapt reports this record to the ad platforms as a Lead: `kind:
+   * 'lead'` with the event id the browser's Pixel will also use (see
+   * src/lib/meta-pixel.ts), or `kind: 'none'` for anything that is not a lead.
+   */
+  tracking?: {
+    visitorId?: string
+    sourceUrl?: string
+    clientUserAgent?: string
+    lead: { kind: 'lead'; eventId: string } | { kind: 'none' }
+  }
+}
+
+export interface IngestObjectResult {
+  success: boolean
+  recordId: string
+  /** Withheld by Sapt (spam, or a contact marked not qualified). No Pixel Lead may fire for it. */
+  held?: boolean
+  /** The id Sapt's server-side Lead carries; the Pixel's Lead must use exactly this. Null when no Lead fires. */
+  conversionEventId?: string | null
 }
 
 /** POST /public/projects/{projectId}/objects/{typeSlug} */
 export async function ingestObject(typeSlug: string, input: IngestObjectInput) {
   const { baseUrl, projectId } = getSaptServerConfig()
-  return saptFetch<{ success: boolean; recordId: string }>(
+  return saptFetch<IngestObjectResult>(
     `${baseUrl}/public/projects/${projectId}/objects/${typeSlug}`,
     { method: 'POST', body: JSON.stringify(input) }
   )
 }
 
 // ============================================================================
-// 2. GET → published CMS (public, Project ID only)
+// 2. Published CMS items (read in cms.ts)
 // ============================================================================
 //
 // Published content is safe to render on a public website and is exposed by a
-// dedicated endpoint. The hardcoded spec remains only as a resilient fallback
-// when the project is missing, unavailable, or has no published item.
+// dedicated, credential-free endpoint; drafts stay behind Sapt auth.
 
 export interface CMSContentItem {
   id: string
@@ -100,25 +119,8 @@ export interface CMSContentItem {
   name: string
   status: 'draft' | 'published' | 'archived'
   content: Record<string, unknown>
+  publishedAt?: string | null
+  displayOrder?: number
   createdAt: string
   updatedAt: string
-}
-
-/**
- * Fetch a single published CMS item by slug. Returns null when the project is
- * not configured or the item doesn't exist.
- * GET /public/projects/{projectId}/cms/content/{contentTypeSlug}/{slug}
- */
-export async function cmsGetBySlug(
-  contentTypeSlug: string,
-  itemSlug: string
-): Promise<CMSContentItem | null> {
-  const { baseUrl, projectId } = getSaptServerConfig()
-  if (!projectId) return null
-
-  const res = await saptFetch<{ item: CMSContentItem }>(
-    `${baseUrl}/public/projects/${projectId}/cms/content/${contentTypeSlug}/${itemSlug}`,
-    { next: { revalidate: 60 } } as RequestInit
-  )
-  return res.data?.item ?? null
 }

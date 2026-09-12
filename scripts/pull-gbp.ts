@@ -158,7 +158,16 @@ interface SaptSiteProfile {
   photos: { name: string; url: string; thumbnailUrl: string; category: string }[]
 }
 
+/** One review as Google's Business Profile API returns it. */
+export interface GbpReview {
+  reviewer: { displayName?: string; isAnonymous?: boolean }
+  starRating: 'ONE' | 'TWO' | 'THREE' | 'FOUR' | 'FIVE' | 'STAR_RATING_UNSPECIFIED'
+  comment?: string
+  createTime: string
+}
+
 interface SaptReviews {
+  reviews?: GbpReview[]
   averageRating?: number
   totalReviewCount?: number
 }
@@ -233,7 +242,7 @@ export function toBusinessHours(periods: GbpPeriod[]): BusinessHours[] {
  * tell that a site was assembled by a machine.
  */
 const SLOT_CATEGORIES: { slot: SlotId; categories: string[] }[] = [
-  { slot: 'hero', categories: ['COVER', 'EXTERIOR'] },
+  { slot: 'storefront', categories: ['COVER', 'EXTERIOR'] },
   { slot: 'exterior', categories: ['EXTERIOR', 'COVER'] },
   { slot: 'interior', categories: ['INTERIOR'] },
   { slot: 'team', categories: ['TEAM'] },
@@ -246,6 +255,27 @@ const SLOT_CATEGORIES: { slot: SlotId; categories: string[] }[] = [
 ]
 
 const EXCLUDED_CATEGORIES = new Set(['PROFILE', 'LOGO', 'MENU', 'FOOD_AND_DRINK'])
+
+/** How Google's category reads in alt text: "Inside Torres' Auto & Tire". */
+const CATEGORY_ALT: Record<string, (name: string) => string> = {
+  COVER: (n) => `${n}, from the street`,
+  EXTERIOR: (n) => `${n}, from the street`,
+  INTERIOR: (n) => `Inside ${n}`,
+  AT_WORK: (n) => `A technician at work at ${n}`,
+  TEAM: (n) => `The team at ${n}`,
+  PRODUCT: (n) => `Work done at ${n}`,
+  COMMON_AREA: (n) => `The waiting area at ${n}`,
+}
+
+/**
+ * Alt text for a photo pulled from Google, from what Google says it shows.
+ * Not from the slot's brief: gallery slots are filled with whatever is left,
+ * and a brief ("brake work up close") would describe a photo that is not
+ * there, which is wrong for a screen reader and for search alike.
+ */
+export function photoAlt(category: string, name: string): string {
+  return (CATEGORY_ALT[category] ?? ((n: string) => `At ${n}`))(name)
+}
 
 export interface PhotoCandidate {
   url: string
@@ -284,6 +314,50 @@ export function assignPhotoSlots(
   }
 
   return assigned
+}
+
+const STARS: Record<GbpReview['starRating'], number> = {
+  ONE: 1,
+  TWO: 2,
+  THREE: 3,
+  FOUR: 4,
+  FIVE: 5,
+  STAR_RATING_UNSPECIFIED: 0,
+}
+
+/** A card's worth of words: enough to say something, short enough to read in motion. */
+const REVIEW_TEXT = { min: 40, max: 320 }
+
+/**
+ * The reviews worth putting on the site, from the newest page Google returns.
+ *
+ * Four and five stars with something written. The page states the real
+ * average and count right above them, so choosing which reviews to quote is
+ * picking testimonials, not hiding anything. Skipped: anonymous reviewers,
+ * Google's machine translations, and text too short or too long for a card.
+ * Surnames are cut to an initial; the reviewer wrote for Google, not for the
+ * shop's homepage.
+ */
+export function pickReviews(reviews: GbpReview[], limit = 12): BusinessProfile['reviews'] {
+  const picked: BusinessProfile['reviews'] = []
+  for (const r of reviews) {
+    if (picked.length >= limit) break
+    const text = (r.comment ?? '').trim().replace(/\s+/g, ' ')
+    const name = (r.reviewer.displayName ?? '').trim()
+    if (STARS[r.starRating] < 4) continue
+    if (r.reviewer.isAnonymous || !name) continue
+    if (text.length < REVIEW_TEXT.min || text.length > REVIEW_TEXT.max) continue
+    if (text.includes('(Translated by Google)')) continue
+    const [first, ...rest] = name.split(/\s+/)
+    const last = rest.at(-1)
+    picked.push({
+      author: last ? `${first} ${last[0].toUpperCase()}.` : first,
+      rating: STARS[r.starRating],
+      text,
+      date: r.createTime.slice(0, 7),
+    })
+  }
+  return picked
 }
 
 // ============================================================================
@@ -423,7 +497,8 @@ async function main(): Promise<void> {
     trpcQuery<SaptReviews>('googleBusiness.reviews.list', {
       projectId,
       gbpLocationId: location.id,
-      pageSize: 1,
+      // The newest page, so the site quotes what customers are saying now.
+      pageSize: 50,
     }),
   ])
 
@@ -451,6 +526,7 @@ async function main(): Promise<void> {
       reviews.averageRating && reviews.totalReviewCount
         ? { value: Number(reviews.averageRating.toFixed(1)), count: reviews.totalReviewCount }
         : null,
+    reviews: pickReviews(reviews.reviews ?? []),
     reviewUrl: meta.reviewUri || '',
     mapsUrl: meta.mapsUri || '',
     placeId: meta.placeId || '',
@@ -468,6 +544,7 @@ async function main(): Promise<void> {
   console.log(
     `pull-gbp: rating ${next.rating ? `${next.rating.value} from ${next.rating.count}` : 'none yet'}`
   )
+  console.log(`pull-gbp: ${next.reviews.length} reviews quoted on the site`)
   console.log(`pull-gbp: ${siteProfile.photos.length} photos, ${assignments.length} slots filled`)
   if (!next.reviewUrl) {
     console.warn('pull-gbp: no review link. Google only issues one for a verified listing.')
@@ -486,7 +563,7 @@ async function main(): Promise<void> {
   for (const a of assignments) {
     const src = await downloadPhoto(root, a.url, a.slot)
     if (!src) continue
-    slots[a.slot] = { ...SLOTS[a.slot], src, alt: `${SLOTS[a.slot].brief}, ${next.name}` }
+    slots[a.slot] = { ...SLOTS[a.slot], src, alt: photoAlt(a.category, next.name) }
   }
 
   const businessFile = path.join(root, BUSINESS_PATH)

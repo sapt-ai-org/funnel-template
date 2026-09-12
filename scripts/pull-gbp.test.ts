@@ -6,6 +6,9 @@ import { SLOTS } from '../src/lib/images'
 import {
   assignPhotoSlots,
   parseEnvFile,
+  photoAlt,
+  pickReviews,
+  type GbpReview,
   replaceRegion,
   toBusinessHours,
   tsLiteral,
@@ -74,9 +77,9 @@ describe('toBusinessHours', () => {
 const photo = (category: string, url: string): PhotoCandidate => ({ category, url })
 
 describe('assignPhotoSlots', () => {
-  it('puts the cover in the hero', () => {
+  it('puts the cover photo in the storefront slot', () => {
     const assigned = assignPhotoSlots([photo('COVER', 'a.jpg')])
-    expect(assigned.find((a) => a.slot === 'hero')?.url).toBe('a.jpg')
+    expect(assigned.find((a) => a.slot === 'storefront')?.url).toBe('a.jpg')
   })
 
   it('never uses the logo or the profile picture', () => {
@@ -218,16 +221,81 @@ describe('the generated business block', () => {
 describe('the generated slots block', () => {
   it('leaves the placeholder machinery standing', () => {
     const source = fs.readFileSync(path.join(process.cwd(), 'src/lib/images.ts'), 'utf8')
-    const slots = { ...SLOTS, hero: { ...SLOTS.hero, src: '/photos/hero.jpg', alt: 'Shop front' } }
+    const slots = { ...SLOTS, storefront: { ...SLOTS.storefront, src: '/photos/storefront.jpg', alt: 'Shop front' } }
     const written = replaceRegion(
       source,
       'slots',
       `export const SLOTS: Record<SlotId, ImageSlot> = ${tsLiteral(slots)}`
     )
-    expect(written).toContain('export function placeholderSrc')
+    expect(written).toContain('export function photo(')
+    expect(written).toContain('export const PHOTO_PLAN')
     expect(written).toContain('export function missingSlots')
-    expect(written).toContain("src: '/photos/hero.jpg'")
+    expect(written).toContain("src: '/photos/storefront.jpg'")
     // Every slot keeps its brief, so an unfilled one still says what it needs.
-    expect(written).toContain("brief: 'The owner, head and shoulders, in the shop'")
+    expect(written).toContain(`brief: '${SLOTS.owner.brief}'`)
+  })
+})
+
+describe('pickReviews', () => {
+  const review = (over: Partial<GbpReview> = {}): GbpReview => ({
+    reviewer: { displayName: 'Maria Gonzalez' },
+    starRating: 'FIVE',
+    comment: 'Called me before doing anything and the price never moved. Car back the same day.',
+    createTime: '2026-08-14T15:02:11Z',
+    ...over,
+  })
+
+  it('shapes a review for a card: short name, number of stars, the month it was written', () => {
+    expect(pickReviews([review()])).toEqual([
+      {
+        author: 'Maria G.',
+        rating: 5,
+        text: 'Called me before doing anything and the price never moved. Car back the same day.',
+        date: '2026-08',
+      },
+    ])
+  })
+
+  it('keeps four and five stars; the page shows the true average separately', () => {
+    const picked = pickReviews([
+      review({ starRating: 'FIVE' }),
+      review({ starRating: 'FOUR' }),
+      review({ starRating: 'THREE' }),
+      review({ starRating: 'ONE' }),
+    ])
+    expect(picked.map((r) => r.rating)).toEqual([5, 4])
+  })
+
+  it('skips what would read badly on a card', () => {
+    const picked = pickReviews([
+      review({ comment: undefined }),
+      review({ comment: 'Great!' }),
+      review({ reviewer: { displayName: 'A Google User', isAnonymous: true } }),
+      review({ comment: '(Translated by Google) Very good service (Original) Muy buen servicio, rapido y honesto siempre' }),
+      review({ comment: 'x'.repeat(600) }),
+    ])
+    expect(picked).toEqual([])
+  })
+
+  it('keeps a one-word name whole', () => {
+    expect(pickReviews([review({ reviewer: { displayName: 'Dre' } })])[0].author).toBe('Dre')
+  })
+
+  it('stops at the limit, newest first as Google returns them', () => {
+    const many = Array.from({ length: 20 }, (_, i) => review({ reviewer: { displayName: `Driver${i}` } }))
+    const picked = pickReviews(many, 12)
+    expect(picked).toHaveLength(12)
+    expect(picked[0].author).toBe('Driver0')
+  })
+})
+
+describe('photoAlt', () => {
+  it('describes a photo by what Google says it shows, naming the shop', () => {
+    expect(photoAlt('TEAM', "Torres' Auto")).toBe("The team at Torres' Auto")
+    expect(photoAlt('INTERIOR', "Torres' Auto")).toBe("Inside Torres' Auto")
+  })
+
+  it('still says something true for a category it does not know', () => {
+    expect(photoAlt('ADDITIONAL', "Torres' Auto")).toBe("At Torres' Auto")
   })
 })

@@ -1,45 +1,36 @@
 @import 'tailwindcss';
 
 /* ════════════════════════════════════════════════════════════════════════════
-   THEME CONFIGURATION
+   DESIGN TOKENS — how the look reaches Tailwind. No values live here.
    ────────────────────────────────────────────────────────────────────────────
-   Runtime values come from `landingSpec.theme` in src/config/funnel.ts.
-   These values are resilient build-time fallbacks only.
+   Colours and the corner radius are set in src/config/design.ts and the two
+   typefaces in src/config/fonts.ts. layout.tsx writes them onto <html> as
+   the variables named below (--brand-*, --bg, --text, --corner, --font-body,
+   --font-heading…), and this block maps each to the token a component asks
+   for. To restyle a site, edit those two files, never this one.
+
+   The system is deliberately small. The shop's brand colour is spent on one
+   thing, the actions (book, call, focus), and everything else is ink on
+   paper. That is what lets one template carry any shop's colour without a
+   redesign: a red shop and a green shop differ only in their buttons.
    ════════════════════════════════════════════════════════════════════════════ */
 
 @theme {
-  /* ═══ PRIMARY BRAND COLORS ═══
-     Main brand color used for buttons, links, and key UI elements.
+  /* ═══ BRAND ═══ `bg-primary` is the brand colour itself; the ramp around it
+     is generated from it (src/lib/color.ts). */
+  --color-primary: var(--color-primary-500);
+  --color-primary-50: var(--brand-50);
+  --color-primary-100: var(--brand-100);
+  --color-primary-200: var(--brand-200);
+  --color-primary-300: var(--brand-300);
+  --color-primary-400: var(--brand-400);
+  --color-primary-500: var(--brand-500);
+  --color-primary-600: var(--brand-600);
+  --color-primary-700: var(--brand-700);
+  --color-primary-800: var(--brand-800);
+  --color-primary-900: var(--brand-900);
 
-     The bare `--color-primary` is what Tailwind resolves `bg-primary`,
-     `text-primary` and `border-primary` against. Without it those classes
-     compile to nothing at all, which is silent: every CTA on the site becomes
-     a transparent box with white text on it. Keep it equal to the 500 step. */
-  --color-primary: #C8102E;
-  --color-primary-50: #FBECEE;
-  --color-primary-100: #F5D4D9;
-  --color-primary-200: #ECAEB8;
-  --color-primary-300: #E17C8C;
-  --color-primary-400: #D34058;
-  --color-primary-500: #C8102E;     /* ← Main brand color (per-client; pulled from Sapt branding) */
-  --color-primary-600: #AC0E28;
-  --color-primary-700: #900C21;
-  --color-primary-800: #74091B;
-  --color-primary-900: #580714;
-
-  /* ═══ ACCENT COLORS ═══
-     Secondary color for highlights, badges, and warm CTAs.
-     `--color-accent` backs `bg-accent`; see the note above. */
-  --color-accent: #1D4ED8;
-  --color-accent-50: #EDF1FC;
-  --color-accent-100: #D6DFF8;
-  --color-accent-200: #B2C3F2;
-  --color-accent-300: #839EEA;
-  --color-accent-400: #4A71E0;
-  --color-accent-500: #1D4ED8;      /* ← Main accent color */
-  --color-accent-600: #1943BA;
-
-  /* ═══ NEUTRAL COLORS (themeable — values live in :root below) ═══ */
+  /* ═══ NEUTRALS ═══ */
   --color-bg: var(--bg);
   --color-surface: var(--surface);
   --color-text: var(--text);
@@ -47,266 +38,219 @@
   --color-text-light: var(--text-light);
   --color-border: var(--border);
   --color-border-light: var(--border-light);
+  /* The dark band: the colour of a mechanic's work shirt, not black. */
+  --color-ink: var(--text);
+  --color-open: var(--open);
 
-  /* ═══ TYPOGRAPHY ═══
-     Font families for body text and headings */
-  --font-sans: var(--funnel-font-sans, 'Inter', system-ui, sans-serif);
-  --font-display: var(--funnel-font-display, 'Inter', system-ui, sans-serif);
+  /* ═══ TYPE ═══ the self-hosted faces next/font loads (src/config/fonts.ts),
+     then a system fallback in case a face ever fails to load. */
+  --font-sans: var(--font-body), system-ui, sans-serif;
+  --font-display: var(--font-heading), 'Arial Narrow', system-ui, sans-serif;
 
-  /* ═══ ANIMATIONS ═══ */
-  --animate-fade-in: fade-in 0.6s ease-out forwards;
-  --animate-slide-up: slide-up 0.6s ease-out forwards;
+  /* ═══ CORNERS ═══ one radius (design.ts), scaled per size so small parts
+     stay in proportion to big ones. At 0 every corner is square.
+     rounded-full is left alone: a status dot stays a dot. */
+  --radius-xs: calc(var(--corner) * 0.5);
+  --radius-sm: calc(var(--corner) * 0.75);
+  --radius-md: var(--corner);
+  --radius-lg: calc(var(--corner) * 1.5);
+  --radius-xl: calc(var(--corner) * 2);
+  --radius-2xl: calc(var(--corner) * 3);
 }
 
-/* ════════════════════════════════════════════════════════════════════════════
-   THEME PALETTES — light is default; set site-config.theme = 'dark' to switch.
-   ════════════════════════════════════════════════════════════════════════════ */
-:root {
-  --bg: #FAFAFA;
-  --surface: #FFFFFF;
-  --text: #1F2937;
-  --text-muted: #6B7280;
-  --text-light: #9CA3AF;
-  --border: #E5E7EB;
-  --border-light: #F3F4F6;
-}
-
-[data-theme='dark'] {
-  --bg: #0C0D10;
-  --surface: #16181D;
-  --text: #F5F6F8;
-  --text-muted: #A3A8B3;
-  --text-light: #6B7280;
-  --border: rgba(255, 255, 255, 0.12);
-  --border-light: rgba(255, 255, 255, 0.06);
-}
-
-/* ════════════════════════════════════════════════════════════════════════════
-   ANIMATION KEYFRAMES
-   ════════════════════════════════════════════════════════════════════════════ */
-
-@keyframes fade-in {
-  from { opacity: 0; }
-  to { opacity: 1; }
-}
-
-@keyframes slide-up {
-  from { opacity: 0; transform: translateY(30px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-
-@keyframes fadeUp {
-  to {
-    opacity: 1;
-    transform: translateY(0);
+/* The review marquee (components/site/Marquee.tsx). One copy of the row
+   slides its own width plus a gap, where the next copy takes its place.
+   `inline` writes the value into the utility itself, so --duration and --gap
+   resolve on the marquee that sets them. In a plain @theme they resolve once
+   on :root, where neither exists, and the animation silently becomes none. */
+@theme inline {
+  --animate-marquee: marquee var(--duration) linear infinite;
+  @keyframes marquee {
+    from {
+      transform: translateX(0);
+    }
+    to {
+      transform: translateX(calc(-100% - var(--gap)));
+    }
   }
 }
 
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-    transform: translateY(10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
+/* ════════════════════════════════════════════════════════════════════════════
+   MOTIF — switched in src/config/design.ts, applied as data-motif on <html>.
+   All CSS, no images.
+   ════════════════════════════════════════════════════════════════════════════ */
 
-/* Booking page fade-in animation */
-.animate-fadeIn {
-  animation: fadeIn 0.4s ease-out forwards;
+/* The motif texture. `.motif` goes on a light ground (the hero), `.motif-ink`
+   on the dark footer; each motif draws itself in the ground's own ink. */
+[data-motif='grid'] .motif {
+  background-image:
+    linear-gradient(to right, color-mix(in srgb, var(--text) 6%, transparent) 1px, transparent 1px),
+    linear-gradient(to bottom, color-mix(in srgb, var(--text) 6%, transparent) 1px, transparent 1px);
+  background-size: 40px 40px;
+  background-position: -1px -1px;
+}
+[data-motif='grid'] .motif-ink {
+  background-image:
+    linear-gradient(to right, rgb(255 255 255 / 0.05) 1px, transparent 1px),
+    linear-gradient(to bottom, rgb(255 255 255 / 0.05) 1px, transparent 1px);
+  background-size: 40px 40px;
+}
+[data-motif='tread'] .motif {
+  background-image:
+    repeating-linear-gradient(60deg, transparent 0 18px, color-mix(in srgb, var(--text) 4%, transparent) 18px 24px),
+    repeating-linear-gradient(-60deg, transparent 0 18px, color-mix(in srgb, var(--text) 4%, transparent) 18px 24px);
+}
+[data-motif='tread'] .motif-ink {
+  background-image:
+    repeating-linear-gradient(60deg, transparent 0 18px, rgb(255 255 255 / 0.035) 18px 24px),
+    repeating-linear-gradient(-60deg, transparent 0 18px, rgb(255 255 255 / 0.035) 18px 24px);
+}
+[data-motif='checker'] .motif {
+  background-image: repeating-conic-gradient(color-mix(in srgb, var(--text) 4%, transparent) 0 25%, transparent 0 50%);
+  background-size: 48px 48px;
+}
+[data-motif='checker'] .motif-ink {
+  background-image: repeating-conic-gradient(rgb(255 255 255 / 0.04) 0 25%, transparent 0 50%);
+  background-size: 48px 48px;
+}
+/* A thin band along a section's edge, in the motif's own pattern. */
+.motif-rule {
+  display: none;
+}
+[data-motif='checker'] .motif-rule {
+  display: block;
+  height: 12px;
+  background: repeating-conic-gradient(var(--text) 0 25%, #fff 0 50%) 0 0 / 12px 12px;
+}
+[data-motif='tread'] .motif-rule,
+[data-motif='grid'] .motif-rule {
+  display: block;
+  height: 6px;
+  background: var(--color-primary);
 }
 
 /* ════════════════════════════════════════════════════════════════════════════
-   BASE STYLES
+   BASE
    ════════════════════════════════════════════════════════════════════════════ */
 
-html, body {
-  font-family: var(--font-sans);
+html {
+  background-color: var(--color-bg);
+  color: var(--color-text);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  -webkit-text-size-adjust: 100%;
+  -webkit-tap-highlight-color: transparent;
+  /* No rubber-band above the hero or below the footer: the page ends where its
+     last band ends, instead of bouncing to show the browser's own ground behind
+     it. The one cost is pull-to-refresh on Android Chrome, which a page built
+     once and served from a CDN has no use for.
+
+     Note the sibling rule on body is `overflow-x: clip`, not `hidden`, and must
+     stay that way: `hidden` makes a scroll container and would break every
+     sticky element on the site (the header, the services and FAQ columns, the
+     funnel overlay's header). `clip` does not. */
+  overscroll-behavior-y: none;
+}
+
+body {
+  font-family: var(--font-sans);
+  font-size: 1.0625rem;
+  line-height: 1.6;
+  overflow-x: clip;
+}
+
+/* One focus treatment for every control on the site, in the brand colour.
+   In the base layer, so a control that shows focus its own way (a text field
+   darkens its border) can switch it off with a utility. */
+@layer base {
+  :focus-visible {
+    outline: 2px solid var(--color-primary);
+    outline-offset: 3px;
+  }
+}
+
+::selection {
+  background: var(--color-primary-100);
   color: var(--color-text);
-  background-color: var(--color-bg);
-  overflow-x: hidden;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }
 
 /* ════════════════════════════════════════════════════════════════════════════
-   SCROLL-TRIGGERED ANIMATIONS (CSS-only, GPU accelerated)
-   ────────────────────────────────────────────────────────────────────────────
-   Elements with .animate-fade-up start invisible and animate in when
-   .animate-visible is added via IntersectionObserver.
-   On mobile (<768px), content is visible immediately for performance.
+   COMPONENTS
    ════════════════════════════════════════════════════════════════════════════ */
 
-.animate-fade-up {
-  opacity: 0;
-  transform: translateY(20px);
+@layer components {
+  /* The repair-order slip. Its top and bottom edges are torn off a pad: a
+     row of half-circles cut out with a mask, so it stays one element with no
+     images and inherits whatever it sits on. */
+  .ticket {
+    --tear: 7px;
+    -webkit-mask:
+      radial-gradient(circle var(--tear) at 50% 0, #0000 98%, #000) 50% 0 / calc(var(--tear) * 3) 51% repeat-x,
+      radial-gradient(circle var(--tear) at 50% 100%, #0000 98%, #000) 50% 100% / calc(var(--tear) * 3) 51% repeat-x;
+    mask:
+      radial-gradient(circle var(--tear) at 50% 0, #0000 98%, #000) 50% 0 / calc(var(--tear) * 3) 51% repeat-x,
+      radial-gradient(circle var(--tear) at 50% 100%, #0000 98%, #000) 50% 100% / calc(var(--tear) * 3) 51% repeat-x;
+  }
+
+  /* Horizontal photo strip on a phone: swipe, snap, no visible scrollbar. */
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
 }
 
-.animate-fade-up.animate-visible {
-  animation: fadeUp 0.6s ease-out forwards;
-}
-
-/* On mobile, show content immediately (no animations) */
-@media (max-width: 767px) {
-  .animate-fade-up {
+/* A funnel step arriving. Only ever runs in answer to a tap. */
+@keyframes step-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
     opacity: 1;
     transform: none;
   }
 }
 
-/* ════════════════════════════════════════════════════════════════════════════
-   BUTTON COMPONENTS
-   ════════════════════════════════════════════════════════════════════════════ */
+.animate-step-in {
+  animation: step-in 0.28s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+}
 
-@layer components {
-  .btn-primary {
-    background: linear-gradient(135deg, var(--color-primary-500) 0%, var(--color-primary-400) 100%);
-    color: white;
-    font-weight: 600;
-    letter-spacing: 0.01em;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    box-shadow: 0 4px 14px 0 rgba(59, 130, 246, 0.3);
-    position: relative;
-    overflow: hidden;
-  }
-
-  .btn-primary::before {
-    content: '';
-    position: absolute;
-    inset: 0;
-    background: linear-gradient(135deg, transparent 0%, rgba(255,255,255,0.2) 50%, transparent 100%);
+/* A header menu opening. Quicker and shorter than a step: it answers a hover. */
+@keyframes menu-in {
+  from {
     opacity: 0;
-    transition: opacity 0.3s ease;
+    transform: translateY(-4px);
   }
-
-  .btn-primary:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 8px 25px 0 rgba(59, 130, 246, 0.4);
-  }
-
-  .btn-primary:hover::before {
+  to {
     opacity: 1;
-  }
-
-  .btn-primary:active {
-    transform: translateY(0);
-  }
-
-  .btn-secondary {
-    background: transparent;
-    color: var(--color-primary-500);
-    font-weight: 600;
-    border: 2px solid var(--color-primary-500);
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  }
-
-  .btn-secondary:hover {
-    background: var(--color-primary-500);
-    color: white;
-    box-shadow: 0 4px 14px 0 rgba(59, 130, 246, 0.25);
-  }
-
-  .btn-accent {
-    background: linear-gradient(135deg, var(--color-accent-500) 0%, var(--color-accent-400) 100%);
-    color: white;
-    font-weight: 600;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    box-shadow: 0 4px 14px 0 rgba(245, 158, 11, 0.3);
-  }
-
-  .btn-accent:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 8px 25px 0 rgba(245, 158, 11, 0.4);
+    transform: none;
   }
 }
 
-/* ════════════════════════════════════════════════════════════════════════════
-   FOCUS STATES (Accessibility)
-   ════════════════════════════════════════════════════════════════════════════ */
+.animate-menu-in {
+  animation: menu-in 0.16s ease-out both;
+}
 
-@layer components {
-  .btn-primary:focus-visible,
-  .btn-secondary:focus-visible,
-  .btn-accent:focus-visible {
-    outline: 2px solid var(--color-primary-500);
-    outline-offset: 2px;
+/* A link to a section lands the section's top under the pinned header, not behind it. */
+section[id] {
+  scroll-margin-top: 1rem;
+}
+@media (min-width: 64rem) {
+  section[id] {
+    scroll-margin-top: 6rem;
   }
-}
-
-input:focus-visible,
-select:focus-visible,
-textarea:focus-visible {
-  outline: none;
-  box-shadow: 0 0 0 2px var(--color-primary-500);
-}
-
-/* ════════════════════════════════════════════════════════════════════════════
-   UTILITY CLASSES
-   ════════════════════════════════════════════════════════════════════════════ */
-
-/* Text gradient for headings */
-.text-gradient {
-  background: linear-gradient(135deg, var(--color-primary-500) 0%, var(--color-primary-400) 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-}
-
-/* Glass effect for overlays */
-.glass {
-  background: rgba(255, 255, 255, 0.9);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-}
-
-/* Card hover effect */
-.card-hover {
-  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.card-hover:hover {
-  transform: translateY(-8px);
-  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.15);
-}
-
-/* Gradient divider */
-.divider {
-  height: 1px;
-  background: linear-gradient(90deg, transparent, var(--color-border), transparent);
-}
-
-/* ════════════════════════════════════════════════════════════════════════════
-   SELECTION & SCROLLBAR
-   ════════════════════════════════════════════════════════════════════════════ */
-
-::selection {
-  background: var(--color-primary-200);
-  color: var(--color-text);
-}
-
-/* Hide scrollbars everywhere (scrolling still works). Applies to all pages. */
-* {
-  -ms-overflow-style: none;
-  scrollbar-width: none;
-}
-
-*::-webkit-scrollbar {
-  display: none;
-  width: 0;
-  height: 0;
-}
-
-/* Hide scrollbar utility (explicit, for scroll containers) */
-.scrollbar-hide {
-  -ms-overflow-style: none !important;
-  scrollbar-width: none !important;
-}
-
-.scrollbar-hide::-webkit-scrollbar {
-  display: none !important;
-  width: 0 !important;
-  height: 0 !important;
 }

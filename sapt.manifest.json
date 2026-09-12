@@ -79,11 +79,24 @@
                   "id": "not_sure",
                   "slug": "not_sure",
                   "label": "Not sure"
+                },
+                {
+                  "id": "other",
+                  "slug": "other",
+                  "label": "Other"
                 }
               ]
             }
           },
           "description": "Mirrors the funnel step ids exactly. Change one and you must change the other."
+        },
+        "details": {
+          "label": "Details",
+          "schema": {
+            "type": "string",
+            "options": {}
+          },
+          "description": "What the customer wrote when none of the choices fit (the Other answer)."
         },
         "timing": {
           "label": "Timing",

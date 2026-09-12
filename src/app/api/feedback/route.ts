@@ -43,10 +43,15 @@ export async function POST(request: Request) {
 
   const { bookingTypeSlug } = getSaptServerConfig()
   const result = await ingestObject(bookingTypeSlug, {
+    // Not a lead. Without this Sapt would report an unhappy customer's note to
+    // the ad platforms as a Lead, and teach the ads to find more of them.
+    tracking: { lead: { kind: 'none' } },
     data: {
       name: body.name?.trim() || 'Anonymous',
-      email: body.email?.trim() || '',
-      phone: body.phone?.trim() || '',
+      // Omitted when blank: the booking type validates both formats, and an empty
+      // string would fail that and lose the feedback.
+      ...(body.email?.trim() ? { email: body.email.trim() } : {}),
+      ...(body.phone?.trim() ? { phone: body.phone.trim() } : {}),
       service: 'Customer feedback',
       // No `status`: the pipeline assigns the initial stage itself.
       source: 'feedback',

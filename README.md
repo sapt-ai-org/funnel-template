@@ -31,19 +31,58 @@ before publishing it.
 
 ## What you get
 
-- A landing page built around what a shop is actually asked: what they fix, what
-  it costs, when they are open, and how fast they can take the car.
-- Deep Google Business Profile integration. `pnpm pull-gbp` writes the shop's
-  name, address, phone, hours, services, rating, review link and photos straight
-  off the listing, so the site and the listing cannot disagree.
-- Named image slots with written briefs. An unfilled slot renders a labelled
-  placeholder at the right aspect ratio instead of a stock photo.
-- SEO and AIO foundations: `AutoRepair` JSON-LD built only from substantiated
-  facts, a sitemap, robots, and an `llms.txt` written for answer engines.
-- A review flow that sends a happy customer to the shop's own Google review form
-  and routes everyone else to an internal feedback form the owner sees.
-- A full-screen booking funnel with mobile haptics, writing to the Sapt CRM.
-- Sapt analytics for page views, CTA interactions, funnel steps, and attribution.
+- **Every page a shop needs.** The home page; a Services page and one page per
+  service; a blog of real job stories; and a plain-language Privacy Policy and
+  Terms, which carriers and ad platforms check before they approve a shop's
+  texting and ads. Every page ends with what the shop fixes, so none is a dead end.
+- **A service page built to book that service.** The service's photo behind a
+  booking form that already knows the service, so it skips "what is the car
+  doing?" and the shop's board gets the service by name. Then what the job
+  involves, when to book it, the service's own questions and recent jobs.
+  Common services have that copy written in `src/config/services.ts` until the
+  shop publishes its own.
+- **Content the shop edits in Sapt.** Services, FAQs, specials and posts are
+  published from Sapt and reach the site on the next visit, with no deploy.
+  Until something is published, every page shows the code defaults.
+- **Every page is served from cache.** Pages are built once and stored in R2;
+  a visitor never waits on Sapt. When an editor publishes, Sapt calls
+  `/api/revalidate` and the pages that use that content are rebuilt. See
+  [Caching](#caching).
+- **A page built around the questions a driver asks, in order.** Can I book it
+  now, who vouches for you, how will it go, do you fix mine, can I trust you,
+  where and when. The first screen is the booking form itself.
+- **Everything factual comes off the Google listing.** `pnpm pull-gbp` writes the
+  shop's name, address, phone, hours, services, rating, review link, recent
+  reviews and photos, so the site and the listing cannot disagree.
+- **Third-party trust, verifiable.** A catalog of the programs shops belong to
+  (ASE, AAA, BBB, NAPA AutoCare, CARFAX and more) with their official marks,
+  each linking to the program's own listing for the shop.
+- **Photos shown well.** A bento gallery that composes itself for however many
+  photos a shop has, with full-size viewing, and a photo plan that gives every
+  position a fallback so a thin profile still looks finished. A live site never
+  shows a placeholder.
+- **Real reviews, moving.** The shop's own recent Google reviews in a two-row
+  marquee that pauses on hover and stands still for anyone who asks for less
+  motion.
+- **An SEO foundation that is hard to get wrong.** One linked JSON-LD graph
+  (`AutoRepair`, `WebSite`, `WebPage`, `FAQPage`, and `Service`, `BlogPosting` and breadcrumbs on their own pages) built only from substantiated
+  facts, share images, a sitemap with image entries, and a guard that keeps
+  any site still carrying the demo name out of every index.
+- **Open to every crawler, AI included.** `robots.txt` allows everything and
+  names the AI crawlers outright. `/llms.txt` is the index an assistant reads
+  first (facts, hours, every service, every question) and `/llms-full.txt` is
+  the whole site in one file. Both are built from the same content as the
+  pages and rebuild when it changes.
+- **A review flow** that sends a customer to the shop's own Google review form
+  and routes service problems to the owner.
+- **Sapt analytics** for page views, bookings by the section that produced
+  them, and attribution. First-party, on from the first deploy.
+- **Meta Pixel ready.** Set `NEXT_PUBLIC_META_PIXEL_ID` and every page sends
+  a PageView and every booking one Lead, counted once alongside Sapt's
+  server-side copy. Nothing from Meta loads until the id is set.
+- **A header that gets anywhere.** A services dropdown on a computer, a full
+  menu with call and book under the thumb on a phone, and the hours, address
+  and number in a strip above.
 
 ## Local development
 
@@ -64,8 +103,25 @@ Three files hold everything a visitor sees:
 | File | What it owns |
 |---|---|
 | `src/config/business.ts` | The facts. Fields marked `@gbp` are generated; fields marked `@manual` are answered by a person. |
-| `src/config/funnel.ts` | The voice. Landing copy, funnel questions, every label. |
+| `src/config/funnel.ts` | The voice. Every sentence a visitor reads, one key per section, plus the booking questions. |
 | `src/lib/images.ts` | The photographs. One named slot per position, each with a brief. |
+| `src/config/design.ts` | The look. Brand colour, neutrals, corner radius, background texture, footer wordmark and flag. |
+| `src/config/fonts.ts` | The two typefaces. Swap a name in the import and the call; any Google font, self-hosted. |
+
+The page itself is `src/app/page.tsx`: one line per section, in running order.
+The sections live in `src/components/site/sections`, built from the handful of
+parts in `src/components/site/primitives.tsx` (`Section`, `Container`,
+`SectionHeader`, `Split`, the buttons). Every section renders nothing when it
+has nothing to say, so removing one is deleting its line, and a custom section
+is either a `features` block in `funnel.ts` or a new file in `sections`.
+
+Restyling is two files and no CSS. `design.ts` holds the colours (one brand
+hex, from which the site generates its light-to-dark ramp), the corner radius
+in pixels (0 is square; the small and large radii scale from it), the motif and
+the footer switches; `fonts.ts` holds the typefaces. `layout.tsx` writes them
+onto `<html>` and every component reads them through Tailwind's tokens, so one
+edit changes the whole site. A client's brand colour lands on the buttons and
+nowhere else, so rebranding never needs a redesign.
 
 Start by pulling the business off Google:
 
@@ -89,14 +145,39 @@ sequence with the project's own ID already in it.
 | `NEXT_PUBLIC_SAPT_PROJECT_ID` | Yes | Public project identifier for analytics and lead capture |
 | `NEXT_PUBLIC_SAPT_BASE_URL` | No | Sapt API base; defaults to `https://api.sapt.ai` |
 | `NEXT_PUBLIC_SAPT_INGEST_URL` | No | Analytics ingest base; defaults to `https://ingest.sapt.ai` |
+| `NEXT_PUBLIC_META_PIXEL_ID` | No | The shop's Meta Pixel; its Lead dedupes against Sapt's server-side copy |
 | `SAPT_BOOKING_TYPE_SLUG` | No | CRM type used for leads; defaults to `booking` |
-| `SAPT_API_KEY` | No | Server-side only. Required by `pnpm pull-gbp`; also enables the optional CMS read |
+| `SAPT_API_KEY` | No | Server-side only. Required by `pnpm pull-gbp` |
 | `GBP_LOCATION_ID` | No | Which Google location `pull-gbp` reads, when the project has several |
+| `APP_KEY` | No | Worker secret. Verifies Sapt's content webhook so edits show at once |
 
-The deployed site needs no secret: content is compiled from `business.ts` and
-`funnel.ts`, and lead capture uses the publicly-ingestable CRM type Sapt
-creates. `SAPT_API_KEY` is a build-time and operator tool, never shipped to the
-browser.
+The deployed site needs no secret to work: content is compiled from
+`business.ts` and `funnel.ts`, CMS content comes from Sapt's public read, and
+lead capture uses the publicly-ingestable CRM type Sapt creates. `APP_KEY` only
+makes edits instant (see [Caching](#caching)). `SAPT_API_KEY` is a build-time
+and operator tool, never shipped to the browser.
+
+## Caching
+
+Nothing is read from Sapt per visitor. `open-next.config.ts` and the bindings
+in `wrangler.jsonc` set up three pieces, all created by the Deploy Button:
+
+- **Pages in R2.** Every page is built once (at deploy, or on its first visit)
+  and served from the `NEXT_INC_CACHE_R2_BUCKET` bucket.
+- **Reads in R2.** Each CMS type is one request to Sapt, cached with the tag
+  `cms:<type>` (`src/lib/cms.ts`). A failed refresh keeps the last good copy.
+- **Rebuilds.** When an editor publishes, Sapt POSTs to `/api/revalidate`,
+  which clears that type's tag; the next visit to any page that used it gets a
+  rebuilt page. Without that call, pages rebuild on their `revalidate` timer
+  (five minutes) in a Durable Object queue, and an edit shows within about ten.
+
+For the instant path, set the `APP_KEY` secret (`pnpm wrangler secret put
+APP_KEY`, the value Sapt signs with) and add the site's root URL, with no
+trailing slash, to **Project Settings → General → Quick links** in Sapt. Sapt
+calls `<that URL>/api/revalidate` for every link in that list.
+
+`WORKER_SELF_REFERENCE` in `wrangler.jsonc` must name the Worker itself. Rename
+the two together; `init-project` writes both from the project slug.
 
 ## Scripts
 

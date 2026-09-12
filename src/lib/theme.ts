@@ -1,72 +1,27 @@
 import type { CSSProperties } from 'react'
-import type { LandingSpec } from '@/config/funnel'
+import { design as defaults, type Design } from '@/config/design'
+import { buildRamp, RAMP_STEPS } from './color'
 
-type ThemeStyle = CSSProperties & Record<`--${string}`, string>
-
-function parseHex(hex: string): [number, number, number] | null {
-  const value = hex.trim().replace(/^#/, '')
-  if (!/^[0-9a-f]{6}$/i.test(value)) return null
-  return [
-    Number.parseInt(value.slice(0, 2), 16),
-    Number.parseInt(value.slice(2, 4), 16),
-    Number.parseInt(value.slice(4, 6), 16),
-  ]
-}
-
-function mix(hex: string, target: string, amount: number): string {
-  const source = parseHex(hex)
-  const destination = parseHex(target)
-  if (!source || !destination) return hex
-  const channel = (index: number) =>
-    Math.round(source[index] + (destination[index] - source[index]) * amount)
-      .toString(16)
-      .padStart(2, '0')
-  return `#${channel(0)}${channel(1)}${channel(2)}`
-}
-
-/** Convert the compact theme in funnel.ts into every CSS token the templates use. */
-export function themeStyle(theme: LandingSpec['theme']): ThemeStyle {
-  return {
-    // The bare tokens back `bg-primary` / `bg-accent`. A ramp alone leaves
-    // those classes resolving to nothing, so every CTA loses its fill.
-    '--color-primary': theme.primary,
-    '--color-accent': theme.accent,
-    '--color-primary-50': mix(theme.primary, '#ffffff', 0.92),
-    '--color-primary-100': mix(theme.primary, '#ffffff', 0.82),
-    '--color-primary-200': mix(theme.primary, '#ffffff', 0.66),
-    '--color-primary-300': mix(theme.primary, '#ffffff', 0.45),
-    '--color-primary-400': mix(theme.primary, '#ffffff', 0.2),
-    '--color-primary-500': theme.primary,
-    '--color-primary-600': mix(theme.primary, '#000000', 0.14),
-    '--color-primary-700': mix(theme.primary, '#000000', 0.28),
-    '--color-primary-800': mix(theme.primary, '#000000', 0.42),
-    '--color-primary-900': mix(theme.primary, '#000000', 0.56),
-    '--color-accent-50': mix(theme.accent, '#ffffff', 0.92),
-    '--color-accent-100': mix(theme.accent, '#ffffff', 0.82),
-    '--color-accent-200': mix(theme.accent, '#ffffff', 0.66),
-    '--color-accent-300': mix(theme.accent, '#ffffff', 0.45),
-    '--color-accent-400': mix(theme.accent, '#ffffff', 0.2),
-    '--color-accent-500': theme.accent,
-    '--color-accent-600': mix(theme.accent, '#000000', 0.14),
-    '--bg': theme.background,
-    '--surface': theme.surface,
-    '--text': theme.text,
-    '--text-muted': theme.textMuted,
-    '--text-light': mix(theme.textMuted, theme.background, 0.28),
-    '--border': theme.border,
-    '--border-light': mix(theme.border, theme.background, 0.5),
-    '--funnel-font-sans': theme.bodyFontFamily,
-    '--funnel-font-display': theme.displayFontFamily,
+/**
+ * The design (src/config/design.ts) as CSS custom properties, written once on
+ * <html> by layout.tsx. globals.css maps each one to a Tailwind token, so a
+ * component asks for `bg-primary` or `rounded-md` and gets the shop's value.
+ * Rendered on the server into the first byte of HTML: no flash, no script.
+ */
+export function themeStyle(design: Design = defaults): CSSProperties {
+  const c = design.colors
+  const ramp = buildRamp(c.brand)
+  const vars: Record<string, string> = {
+    ...Object.fromEntries(RAMP_STEPS.map((step) => [`--brand-${step}`, ramp[step]])),
+    '--bg': c.paper,
+    '--surface': c.surface,
+    '--text': c.ink,
+    '--text-muted': c.muted,
+    '--text-light': c.faint,
+    '--border': c.line,
+    '--border-light': c.lineFaint,
+    '--open': c.open,
+    '--corner': `${Math.max(0, design.radius)}px`,
   }
-}
-
-/** Only allow a stylesheet provider URL—not arbitrary markup or executable schemes. */
-export function safeFontStylesheetUrl(value?: string): string | undefined {
-  if (!value) return undefined
-  try {
-    const url = new URL(value)
-    return url.protocol === 'https:' && url.hostname === 'fonts.googleapis.com' ? url.href : undefined
-  } catch {
-    return undefined
-  }
+  return vars as CSSProperties
 }
